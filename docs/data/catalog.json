@@ -48,7 +48,8 @@
       "title": "SBB benthic foraminifera — per object (Kahanamoku et al. 2024)",
       "short": "底棲有孔蟲（逐物件）",
       "description": "23,210 個物件 · 每物件 2D 形態 PCA（依屬分色，可切岩芯/年代）· 800 年記錄",
-      "zip": "data/foram_objects.zip"
+      "zip": "data/foram_objects.zip",
+      "remote_images": { "index_url": "data/foram_obj_images.json" }
     },
     {
       "id": "characiforms",

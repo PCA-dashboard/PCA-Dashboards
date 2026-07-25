@@ -29,9 +29,20 @@
       figs += '<figure class="info-fig outline"><img src="' + outline + '" alt="' + esc(name) + ' 輪廓"/>' +
         '<figcaption>本種頭盾輪廓</figcaption></figure>';
     }
-    var imgHTML = figs
-      ? '<div class="info-image-wrap' + (photo && outline ? ' dual' : '') + '">' + figs + '</div>'
-      : '<div class="info-image-wrap placeholder"></div>';
+    // 無烤入圖時，若資料集設定了遠端影像且此物件有圖 → 佔位並非同步 Range 抓取
+    var ri = global.FrogDash.RemoteImages;
+    var remoteId = (!photo && ri && ri.has(sid)) ? sid : null;
+    var imgHTML;
+    if (figs) {
+      imgHTML = '<div class="info-image-wrap' + (photo && outline ? ' dual' : '') + '">' + figs + '</div>';
+    } else if (remoteId) {
+      var attrib = esc((ri.citation || "") + (ri.license ? " · " + ri.license : ""));
+      imgHTML = '<div class="info-image-wrap remote loading" data-remote="' + esc(remoteId) + '">' +
+        '<figure class="info-fig"><img alt="' + esc(name) + '" />' +
+        (attrib ? '<figcaption>' + attrib + '</figcaption>' : '') + '</figure></div>';
+    } else {
+      imgHTML = '<div class="info-image-wrap placeholder"></div>';
+    }
     var rows = "<tr><td class='k'>species_id</td><td>" + esc(sid) + "</td></tr>";
     (model.infoFields || []).forEach(function (f) {
       var v = t[f.column];
@@ -43,9 +54,22 @@
       '<table class="info-table">' + rows + '</table></div>';
   }
 
+  function hydrateRemote(root) {
+    var ri = global.FrogDash.RemoteImages; if (!ri || !root) return;
+    root.querySelectorAll("[data-remote]").forEach(function (wrap) {
+      var id = wrap.getAttribute("data-remote"), img = wrap.querySelector("img");
+      ri.get(id).then(function (url) {
+        if (!document.body.contains(wrap)) { if (url) URL.revokeObjectURL(url); return; }
+        if (!url) { wrap.classList.remove("loading"); wrap.classList.add("placeholder"); wrap.innerHTML = ""; return; }
+        if (img) { img.onload = function () { wrap.classList.remove("loading"); }; img.src = url; }
+      });
+    });
+  }
+
   function showCard(p) {
     if (!Store.data) return;
     card.innerHTML = '<div class="info-body">' + buildHTML(Store.data, p.speciesId) + '</div>';
+    hydrateRemote(card);
     card.hidden = false;
     // 定位在游標旁，超出邊界則翻面
     var pos = p.pos || { x: 40, y: 40 };
@@ -68,6 +92,7 @@
   function openPanel(sid) {
     if (!Store.data) return;
     panelBody.innerHTML = '<div class="info-body">' + buildHTML(Store.data, sid) + '</div>';
+    hydrateRemote(panelBody);
     var wasHidden = panel.hidden;
     panel.hidden = false;
     document.body.classList.add("has-side-panel");

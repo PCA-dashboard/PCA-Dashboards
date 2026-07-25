@@ -22,8 +22,9 @@
     }, 50);
   }
 
-  function loadVia(promise, label) {
+  function loadVia(promise, label, remoteCfg) {
     var T = function (k, p) { return FD.t ? FD.t(k, p) : k; };
+    if (FD.setupRemoteImages) FD.setupRemoteImages(remoteCfg || null);  // 依資料集設定遠端影像
     setStatus(T("st.loading", { label: label || T("st.loadingDefault") }), "loading");
     return promise.then(function (model) {
       Store.setData(model);
@@ -84,7 +85,7 @@
     var picker = document.getElementById("dataset-picker");
     if (picker) picker.value = ds.id;
     if (updateHash) location.hash = "dataset=" + ds.id;
-    loadVia(FD.Loader.fromUrl(ds.zip), "載入 " + (ds.short || ds.title));
+    loadVia(FD.Loader.fromUrl(ds.zip), "載入 " + (ds.short || ds.title), ds.remote_images);
   }
   function initGallery() {
     return fetch("data/catalog.json").then(function (r) { return r.ok ? r.json() : null; })
