@@ -68,6 +68,7 @@
       model.idCol = taxaMeta.id_column || "species_id";
       model.displayLabelCol = taxaMeta.display_label_column || "display_label";
       model.imageCol = taxaMeta.image_column || "image";
+      model.imageBaseUrl = taxaMeta.image_base_url || null;    // 設定時：照片為站上散檔，按需載入＋瀏覽器原生快取
       model.outlineCol = taxaMeta.outline_column || null;      // 形態輪廓（可選，與照片並存）
       model.imageCaptionCol = taxaMeta.image_caption_column || null;  // 照片標註/來源授權
       model.infoFields = taxaMeta.info_fields || [];
@@ -148,11 +149,12 @@
 
       // 圖片 blob 快取：同一檔（如共用的科代表照）只解一次
       var blobCache = {};
-      function loadInto(col, target) {
+      function loadInto(col, target, baseUrl) {
         if (!col) return;
         Object.keys(model.taxa).forEach(function (sid) {
           var rel = model.taxa[sid][col];
           if (!rel) return;
+          if (baseUrl) { target[sid] = baseUrl + rel; return; }   // 站上散檔：直接當 URL，<img> 按需抓、瀏覽器原生快取
           if (blobCache[rel]) {
             imgJobs.push(blobCache[rel].then(function (u) { target[sid] = u; }));
             return;
@@ -177,7 +179,7 @@
       }
 
       return Promise.all(jobs).then(function () {
-        loadInto(model.imageCol, model.imageURLs);
+        loadInto(model.imageCol, model.imageURLs, model.imageBaseUrl);
         loadInto(model.outlineCol, model.outlineURLs);
         return Promise.all(imgJobs);
       }).then(function () {
