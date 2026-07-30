@@ -6,7 +6,8 @@
       "title": "Australian frogs & tadpoles (Sherratt et al. 2017)",
       "short": "青蛙與蝌蚪",
       "description": "166 物種 · 蝌蚪 & 成體 PCA + 親緣樹",
-      "zip": "data/frog.zip"
+      "zip": "data/frog.zip",
+      "gbif_fallback": true
     },
     {
       "id": "trilobites",
@@ -20,21 +21,24 @@
       "title": "Inland fish body shape (Torgersen et al. 2023)",
       "short": "內陸魚類體型",
       "description": "232 標本 · 3D 體型形態空間 + 科級親緣樹",
-      "zip": "data/fish.zip"
+      "zip": "data/fish.zip",
+      "gbif_fallback": true
     },
     {
       "id": "otoliths",
       "title": "Sagitta otolith diversification (Van Damme et al. 2024)",
       "short": "魚類耳石",
       "description": "697 種 · 側視＋背視耳石形態空間 + 物種級親緣樹（依體型分色）",
-      "zip": "data/otolith.zip"
+      "zip": "data/otolith.zip",
+      "gbif_fallback": true
     },
     {
       "id": "turtles",
       "title": "Turtle shell diversification (Stayton et al. 2018)",
       "short": "龜殼",
       "description": "274 種 · 3D 殼形態空間（53 地標）+ 物種級親緣樹（水生/陸生分色）",
-      "zip": "data/turtle.zip"
+      "zip": "data/turtle.zip",
+      "gbif_fallback": true
     },
     {
       "id": "forams",
@@ -49,14 +53,17 @@
       "short": "底棲有孔蟲（逐物件）",
       "description": "23,210 個物件 · 每物件 2D 形態 PCA（依屬分色，可切岩芯/年代）· 800 年記錄",
       "zip": "data/foram_objects.zip",
-      "remote_images": { "index_url": "data/foram_obj_images.json" }
+      "remote_images": {
+        "index_url": "data/foram_obj_images.json"
+      }
     },
     {
       "id": "characiforms",
       "title": "Characiform body-shape diversification (Burns & Sidlauskas 2019)",
       "short": "脂鯉體型",
       "description": "116 種脂鯉目魚類體型 · 幾何形態測量 PCA + 物種級親緣樹（依科分色，13 科）",
-      "zip": "data/characiform.zip"
+      "zip": "data/characiform.zip",
+      "gbif_fallback": true
     },
     {
       "id": "scallops",

@@ -22,9 +22,10 @@
     }, 50);
   }
 
-  function loadVia(promise, label, remoteCfg) {
+  function loadVia(promise, label, remoteCfg, gbifField) {
     var T = function (k, p) { return FD.t ? FD.t(k, p) : k; };
     if (FD.setupRemoteImages) FD.setupRemoteImages(remoteCfg || null);  // 依資料集設定遠端影像
+    FD.gbifFallback = gbifField || null;                                 // GBIF 學名備援欄位（無則關閉）
     setStatus(T("st.loading", { label: label || T("st.loadingDefault") }), "loading");
     return promise.then(function (model) {
       Store.setData(model);
@@ -85,7 +86,8 @@
     var picker = document.getElementById("dataset-picker");
     if (picker) picker.value = ds.id;
     if (updateHash) location.hash = "dataset=" + ds.id;
-    loadVia(FD.Loader.fromUrl(ds.zip), "載入 " + (ds.short || ds.title), ds.remote_images);
+    var gbifField = ds.gbif_fallback === true ? "display_label" : (ds.gbif_fallback && ds.gbif_fallback.name_field) || null;
+    loadVia(FD.Loader.fromUrl(ds.zip), "載入 " + (ds.short || ds.title), ds.remote_images, gbifField);
   }
   function initGallery() {
     return fetch("data/catalog.json").then(function (r) { return r.ok ? r.json() : null; })

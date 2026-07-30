@@ -16,33 +16,33 @@
     var name = t[model.displayLabelCol] || sid;
     var g = Store.groupOf(sid);
     var groupHTML = g ? global.FrogDash.svgSymbol(g.symbol, g.color, 14) + "<span>" + esc(g.label) + "</span>" : "";
-    // 影像區：照片（可選，含來源標註）＋ 形態輪廓（可選）並存；皆缺則佔位
+    // 影像區：照片（烤入 / Zenodo Range / GBIF 學名備援，擇一）＋ 形態輪廓（可選）並存
     var photo = model.imageURLs[sid];
     var outline = model.outlineURLs ? model.outlineURLs[sid] : null;
     var caption = model.imageCaptionCol ? t[model.imageCaptionCol] : "";
-    var figs = "";
-    if (photo) {
-      figs += '<figure class="info-fig"><img src="' + photo + '" alt="' + esc(name) + '"/>' +
-        (caption ? '<figcaption>' + esc(caption) + '</figcaption>' : '') + '</figure>';
-    }
-    if (outline) {
-      figs += '<figure class="info-fig outline"><img src="' + outline + '" alt="' + esc(name) + ' 輪廓"/>' +
-        '<figcaption>本種頭盾輪廓</figcaption></figure>';
-    }
-    // 無烤入圖時，若資料集設定了遠端影像且此物件有圖 → 佔位並非同步 Range 抓取
     var ri = global.FrogDash.RemoteImages;
     var remoteId = (!photo && ri && ri.has(sid)) ? sid : null;
-    var imgHTML;
-    if (figs) {
-      imgHTML = '<div class="info-image-wrap' + (photo && outline ? ' dual' : '') + '">' + figs + '</div>';
+    var gbifName = (!remoteId && global.FrogDash.gbifFallback && global.FrogDash.GBIF)
+      ? (t[global.FrogDash.gbifFallback] || name) : null;
+
+    var figs = [];
+    if (photo) {
+      figs.push('<figure class="info-fig"><img src="' + photo + '" alt="' + esc(name) + '"/>' +
+        (caption ? '<figcaption>' + esc(caption) + '</figcaption>' : '') + '</figure>');
     } else if (remoteId) {
       var attrib = esc((ri.citation || "") + (ri.license ? " · " + ri.license : ""));
-      imgHTML = '<div class="info-image-wrap remote loading" data-remote="' + esc(remoteId) + '">' +
-        '<figure class="info-fig"><img alt="' + esc(name) + '" />' +
-        (attrib ? '<figcaption>' + attrib + '</figcaption>' : '') + '</figure></div>';
-    } else {
-      imgHTML = '<div class="info-image-wrap placeholder"></div>';
+      figs.push('<figure class="info-fig remote loading" data-remote="' + esc(remoteId) + '"><img alt="' + esc(name) + '" />' +
+        (attrib ? '<figcaption>' + attrib + '</figcaption>' : '') + '</figure>');
     }
+    if (gbifName) {   // GBIF 代表照（與既有圖表/輪廓並存）
+      figs.push('<figure class="info-fig remote loading gbif" data-gbif="' + esc(gbifName) + '"><img alt="' + esc(name) + '" /><figcaption class="gbif-cred"></figcaption></figure>');
+    }
+    if (outline) {
+      figs.push('<figure class="info-fig outline"><img src="' + outline + '" alt="' + esc(name) + ' 輪廓"/><figcaption>形態輪廓</figcaption></figure>');
+    }
+    var imgHTML = figs.length
+      ? '<div class="info-image-wrap' + (figs.length > 1 ? ' dual' : '') + '">' + figs.join("") + '</div>'
+      : '<div class="info-image-wrap placeholder"></div>';
     var rows = "<tr><td class='k'>species_id</td><td>" + esc(sid) + "</td></tr>";
     (model.infoFields || []).forEach(function (f) {
       var v = t[f.column];
@@ -55,13 +55,26 @@
   }
 
   function hydrateRemote(root) {
-    var ri = global.FrogDash.RemoteImages; if (!ri || !root) return;
-    root.querySelectorAll("[data-remote]").forEach(function (wrap) {
+    if (!root) return;
+    var ri = global.FrogDash.RemoteImages;
+    if (ri) root.querySelectorAll("[data-remote]").forEach(function (wrap) {
       var id = wrap.getAttribute("data-remote"), img = wrap.querySelector("img");
       ri.get(id).then(function (url) {
         if (!document.body.contains(wrap)) { if (url) URL.revokeObjectURL(url); return; }
-        if (!url) { wrap.classList.remove("loading"); wrap.classList.add("placeholder"); wrap.innerHTML = ""; return; }
+        if (!url) { wrap.style.display = "none"; return; }
         if (img) { img.onload = function () { wrap.classList.remove("loading"); }; img.src = url; }
+      });
+    });
+    // GBIF 學名備援
+    var gb = global.FrogDash.GBIF;
+    if (gb) root.querySelectorAll("[data-gbif]").forEach(function (wrap) {
+      var nm = wrap.getAttribute("data-gbif"), img = wrap.querySelector("img"), cred = wrap.querySelector(".gbif-cred");
+      gb.get(nm).then(function (res) {
+        if (!document.body.contains(wrap)) return;
+        function fail() { wrap.style.display = "none"; }
+        if (!res || !res.url) return fail();
+        if (cred) cred.textContent = res.credit || "";
+        if (img) { img.onload = function () { wrap.classList.remove("loading"); }; img.onerror = fail; img.referrerPolicy = "no-referrer"; img.src = res.url; }
       });
     });
   }
