@@ -23,7 +23,7 @@
     var ri = global.FrogDash.RemoteImages;
     var remoteId = (!photo && ri && ri.has(sid)) ? sid : null;
     var gbifName = (!remoteId && global.FrogDash.gbifFallback && global.FrogDash.GBIF)
-      ? (t[global.FrogDash.gbifFallback] || name) : null;
+      ? (t[global.FrogDash.gbifFallback] || "") : null;   // 空學名 → 不查（如未解析的扇貝代碼）
 
     var figs = [];
     if (photo) {

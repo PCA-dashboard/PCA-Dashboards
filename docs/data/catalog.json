@@ -70,7 +70,10 @@
       "title": "Scallop shell shape evolution (Sherratt, Serb & Adams 2017)",
       "short": "扇貝殼形態",
       "description": "123 種扇貝 · 左瓣＋右瓣兩個 3D 殼形態空間（202 地標，GPA→PCA）+ 物種級親緣樹（依生活習性分色）",
-      "zip": "data/scallop.zip"
+      "zip": "data/scallop.zip",
+      "gbif_fallback": {
+        "name_field": "scientific_name"
+      }
     }
   ]
 }
