@@ -82,6 +82,14 @@
       var b = e.target.closest("[data-lang]"); if (b && FD.i18n) FD.i18n.setLang(b.getAttribute("data-lang"));
     });
 
+    // 手機漢堡：展開/收合頂部列
+    var burger = document.getElementById("menu-toggle");
+    var topbar = document.querySelector(".topbar");
+    if (burger && topbar) burger.addEventListener("click", function () {
+      var open = topbar.classList.toggle("nav-open");
+      burger.setAttribute("aria-expanded", open ? "true" : "false");
+    });
+
     // 分頁膠囊：概覽 / 分析 / 載入資料 / 建立精靈
     var nav = document.getElementById("nav-pills");
     if (nav) nav.addEventListener("click", function (e) {

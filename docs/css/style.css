@@ -152,6 +152,7 @@ a:hover { color: var(--accent-hi); }
 .accent-dot.active { box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px currentColor; }
 
 .topbar-actions { display: flex; align-items: center; gap: 10px; margin-left: auto; }
+.menu-toggle { display: none; }   /* 只在手機顯示（見 RWD 區）*/
 .topbar > .search-wrap { flex: 1 1 220px; display: flex; justify-content: center; }
 @media (max-width: 1100px) { .topbar { flex-wrap: wrap; } .topbar > .search-wrap { order: 3; flex-basis: 100%; justify-content: stretch; } .topbar > .search-wrap .sb-pill { width: 100%; } }
 .dataset-switch { display: flex; align-items: center; }
@@ -565,4 +566,35 @@ body.has-side-panel { padding-right: 340px; }
   .hero-title { font-size: 34px; }
   .dataset-meta { max-width: 100%; text-align: left; }
   .recent-grid { grid-template-columns: 1fr; }
+}
+
+/* ===== 手機 RWD：頂部列收成漢堡選單 + 高度自適應 ===== */
+@media (max-width: 720px) {
+  .menu-toggle { display: grid; }
+  .topbar { flex-wrap: wrap; gap: 10px; margin-bottom: 12px; }
+  .topbar > .search-wrap { order: 1; flex: 1 1 120px; justify-content: stretch; }
+  .topbar > .search-wrap .sb-pill { width: 100%; }
+  .topbar-actions { order: 2; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+  /* 預設收合：導覽膠囊、資料集、次要動作藏起，只留漢堡+搜尋+設定+logo */
+  .nav-pills, .dataset-switch { display: none; flex-basis: 100%; }
+  #overview-toggle, #side-panel-toggle, #clear-btn, #bell-tile { display: none; }
+  .logo-tile { display: none; }   /* 手機省空間，logo 為裝飾性 */
+  /* 展開（點漢堡）*/
+  .topbar.nav-open .nav-pills { display: flex; flex-wrap: wrap; order: 3; }
+  .topbar.nav-open .dataset-switch { display: flex; order: 4; }
+  .topbar.nav-open #overview-toggle,
+  .topbar.nav-open #side-panel-toggle,
+  .topbar.nav-open #clear-btn,
+  .topbar.nav-open #bell-tile { display: inline-flex; }
+  .topbar.nav-open .dataset-switch .axis-select { flex: 1; }
+
+  .hero { padding: 22px 18px; }
+  .hero-title { font-size: 30px; }
+  .hero-word b { font-size: 24px; }
+  .pca-panel .plot { height: 300px; }
+  .tree-host { height: 56vh; min-height: 320px; margin: 0 6px 10px; }
+  .panel-head { padding: 12px 14px; }
+  .legend-bar { padding: 12px 14px; }
+  .settings-menu { width: min(280px, calc(100vw - 24px)); }
+  .drawer-gauges { grid-template-columns: 1fr; }
 }
