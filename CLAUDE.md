@@ -7,7 +7,7 @@
 收錄 9 篇科學論文的資料,部署在 GitHub Pages。使用者在瀏覽器裡探索形態空間散點圖 +
 互動式親緣樹 + 物種資訊卡。
 
-- 公開站:https://eddielss96.github.io/PCA-Dashboards/
+- 公開站:https://pca-dashboard.github.io/PCA-Dashboards/
 - 部署來源:`main` 分支的 `docs/`(見 `.github/workflows/deploy-pages.yml`)。**推上 `main` 就會自動重新部署。**
 - 私有的前處理/建置腳本在另一個 repo **`PCA-Dashboards-Source`**(見下方)。
 
