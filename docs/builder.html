@@ -11,23 +11,27 @@
       d=p==='auto'?(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'):p;
       r.setAttribute('data-theme',d);r.setAttribute('data-accent',a);}catch(e){}})();
   </script>
-  <link rel="stylesheet" href="css/style.css?v=14" />
+  <link rel="stylesheet" href="css/style.css?v=15" />
   <script src="vendor/jszip/jszip-3.10.1.min.js"></script>
   <script src="vendor/plotly/plotly-2.35.2.min.js"></script>
   <script src="vendor/phylocanvas/phylocanvas.gl-1.64.0.bundle.js"></script>
 </head>
 <body>
+<!-- 與檢視器共用 .app-shell：它才是 min-height:100vh + flex column 的容器。
+     少了它，.builder 的 flex:1／overflow 不會生效，兩欄各自捲動的版面會壞掉。-->
+<div class="app-shell builder-shell">
   <header class="topbar">
     <div class="title">
       <h1 data-i18n="bld.title">建立精靈</h1>
       <p class="subtitle" data-i18n="bld.subtitle">上傳 PCA 資料 → 即時互動預覽 → 打包成可放 GitHub Pages 的無伺服器網頁</p>
     </div>
     <div class="topbar-actions">
-      <div class="search-wrap" id="search-wrap">
+      <!-- 搜尋與清除只在有預覽資料後才有意義，由 builder.js 在建立預覽成功時顯示 -->
+      <div class="search-wrap" id="search-wrap" hidden>
         <input id="search-input" type="search" placeholder="搜尋物種…" data-i18n-ph="search.ph" autocomplete="off" aria-label="搜尋物種" />
         <ul id="search-results" class="search-results" hidden></ul>
       </div>
-      <button id="clear-btn" class="btn" data-i18n-title="btn.clear" data-i18n="btn.clear" title="清除選取">清除選取</button>
+      <button id="clear-btn" class="btn" data-i18n-title="btn.clear" data-i18n="btn.clear" title="清除選取" hidden>清除選取</button>
       <a class="btn" href="index.html" data-i18n="bld.openViewer">開啟檢視器</a>
       <div class="settings-wrap">
         <button id="settings-tile" class="tile" data-i18n-title="set.title" title="設定" aria-label="設定">
@@ -84,7 +88,13 @@
 
         <li>
           <h3 data-i18n="bld.s3">③ 物種／分類資料</h3>
-          <label class="fld"><span data-i18n="bld.fTaxa">分類 CSV</span> <input id="f-taxa" type="file" accept=".csv" /></label>
+          <label class="fld"><span data-i18n="bld.fTaxa">分類 CSV</span>
+            <span class="filepick">
+              <input id="f-taxa" type="file" accept=".csv" />
+              <span class="filepick-btn" data-i18n="bld.pickFile">選擇檔案</span>
+              <span class="filepick-name" data-i18n="bld.noFile">未選擇檔案</span>
+            </span>
+          </label>
           <div id="taxa-map" hidden>
             <div class="grid2">
               <label class="fld"><span data-i18n="bld.mId">species_id 欄</span> <select id="m-id"></select></label>
@@ -101,7 +111,13 @@
 
         <li>
           <h3 data-i18n="bld.s4">④ 親緣樹（可選）</h3>
-          <label class="fld"><span data-i18n="bld.fTree">Newick 樹檔</span> <input id="f-tree" type="file" accept=".nwk,.tre,.newick,.txt" /></label>
+          <label class="fld"><span data-i18n="bld.fTree">Newick 樹檔</span>
+            <span class="filepick">
+              <input id="f-tree" type="file" accept=".nwk,.tre,.newick,.txt" />
+              <span class="filepick-btn" data-i18n="bld.pickFile">選擇檔案</span>
+              <span class="filepick-name" data-i18n="bld.noFile">未選擇檔案</span>
+            </span>
+          </label>
           <p class="dim small" data-i18n="bld.s4hint">樹的 tip 標籤需與 species_id 一致。無樹時只顯示 PCA。</p>
         </li>
       </ol>
@@ -111,15 +127,27 @@
         <button id="btn-zip" class="btn" disabled data-i18n="bld.dlZip">下載統一 Zip</button>
         <button id="btn-package" class="btn" disabled data-i18n="bld.package">打包成 GitHub Pages 網站 ⬇</button>
       </div>
+      <p id="builder-hint" class="builder-hint" data-i18n="bld.hintPreviewFirst">先按「建立預覽」，下載與打包才會開啟</p>
       <div id="build-msg" class="build-msg"></div>
     </aside>
 
     <!-- 右：即時預覽（重用檢視器模組）-->
     <main class="builder-preview">
       <div id="preview-empty" class="preview-empty">
-        <div>
+        <div class="preview-empty-inner">
           <p class="big" data-i18n="bld.emptyTitle">👀 即時預覽會出現在這裡</p>
-          <p class="dim" data-i18n="bld.emptyBody">填好左側、按「建立預覽」。所有處理都在你的瀏覽器內完成，資料不會上傳到任何伺服器。</p>
+          <p class="sub" data-i18n="bld.emptyBody">填好左側、按「建立預覽」。所有處理都在你的瀏覽器內完成，資料不會上傳到任何伺服器。</p>
+          <div class="pe-steps">
+            <div class="pe-step"><span class="n">1</span><span class="t" data-i18n="bld.peStep1">上傳「物種 × PC 分數」CSV——第一欄是 species_id，其餘是 PC1、PC2…</span></div>
+            <div class="pe-step"><span class="n">2</span><span class="t" data-i18n="bld.peStep2">上傳分類 CSV，選好要用哪一欄分組著色；有親緣樹再加 Newick（可略）</span></div>
+            <div class="pe-step"><span class="n">3</span><span class="t" data-i18n="bld.peStep3">按「建立預覽」確認沒問題，再下載統一 Zip 或直接打包成網站</span></div>
+          </div>
+          <div class="pe-shape">
+            <div class="cap" data-i18n="bld.peShapeCap">分數 CSV 長這樣：</div>
+<code>species_id,PC1,PC2,PC3
+Genus_A_sp1,-1.284,0.512,-0.203
+Genus_A_sp2,2.017,-0.884,0.341</code>
+          </div>
         </div>
       </div>
       <div id="dashboard" class="dashboard" hidden>
@@ -157,6 +185,7 @@
       </div>
     </main>
   </div>
+</div><!-- /.app-shell -->
 
   <!-- 滑鼠移到點上浮出的資訊卡 -->
   <div id="info-card" class="info-card" hidden></div>
@@ -183,17 +212,17 @@
     </div>
   </div>
 
-  <script src="js/state.js?v=14"></script>
-  <script src="js/i18n.js?v=14"></script>
-  <script src="js/zip-loader.js?v=14"></script>
-  <script src="js/unified-build.js?v=14"></script>
-  <script src="js/groups.js?v=14"></script>
-  <script src="js/legend.js?v=14"></script>
-  <script src="js/pca-view.js?v=14"></script>
-  <script src="js/tree-view.js?v=14"></script>
-  <script src="js/info-panel.js?v=14"></script>
-  <script src="js/search.js?v=14"></script>
-  <script src="js/theme.js?v=14"></script>
-  <script src="js/builder.js?v=14"></script>
+  <script src="js/state.js?v=15"></script>
+  <script src="js/i18n.js?v=15"></script>
+  <script src="js/zip-loader.js?v=15"></script>
+  <script src="js/unified-build.js?v=15"></script>
+  <script src="js/groups.js?v=15"></script>
+  <script src="js/legend.js?v=15"></script>
+  <script src="js/pca-view.js?v=15"></script>
+  <script src="js/tree-view.js?v=15"></script>
+  <script src="js/info-panel.js?v=15"></script>
+  <script src="js/search.js?v=15"></script>
+  <script src="js/theme.js?v=15"></script>
+  <script src="js/builder.js?v=15"></script>
 </body>
 </html>

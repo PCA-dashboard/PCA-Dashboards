@@ -78,6 +78,16 @@
     });
   }
   function el(id) { return document.getElementById(id); }
+
+  /** 自訂檔案選擇：選完後把檔名寫回去，並標記已選狀態。 */
+  function syncFilePick(input) {
+    var box = input.closest(".filepick");
+    if (!box) return;
+    var nameEl = box.querySelector(".filepick-name");
+    var f = input.files && input.files[0];
+    if (nameEl) nameEl.textContent = f ? f.name : T("bld.noFile");
+    box.classList.toggle("has-file", !!f);
+  }
   function msg(text, kind) {
     var m = el("build-msg");
     m.className = "build-msg" + (kind ? " " + kind : "");
@@ -90,11 +100,19 @@
     viewSeq++;
     var wrap = document.createElement("div");
     wrap.className = "view-row";
+    function pick(cls) {
+      return '<span class="filepick">' +
+        '<input type="file" class="' + cls + '" accept=".csv" />' +
+        '<span class="filepick-btn">' + esc(T("bld.pickFile")) + '</span>' +
+        '<span class="filepick-name">' + esc(T("bld.noFile")) + '</span></span>';
+    }
     wrap.innerHTML =
-      '<input type="text" class="v-label" placeholder="' + esc(T("bld.viewName")) + '" value="' + esc(label || "") + '" />' +
-      '<label class="mini">' + esc(T("bld.vScores")) + ' <input type="file" class="v-scores" accept=".csv" /></label>' +
-      '<label class="mini">' + esc(T("bld.vVar")) + '<input type="file" class="v-var" accept=".csv" /></label>' +
-      '<button class="btn small v-del" title="' + esc(T("bld.vDel")) + '">✕</button>';
+      '<div class="view-row-head">' +
+        '<input type="text" class="v-label" placeholder="' + esc(T("bld.viewName")) + '" value="' + esc(label || "") + '" />' +
+        '<button class="btn small v-del" title="' + esc(T("bld.vDel")) + '" aria-label="' + esc(T("bld.vDel")) + '">✕</button>' +
+      '</div>' +
+      '<label class="mini">' + esc(T("bld.vScores")) + pick("v-scores") + '</label>' +
+      '<label class="mini">' + esc(T("bld.vVar")) + pick("v-var") + '</label>';
     wrap.querySelector(".v-del").addEventListener("click", function () { wrap.remove(); });
     el("views-list").appendChild(wrap);
   }
@@ -197,6 +215,12 @@
         el("dashboard").hidden = false;
         el("btn-zip").disabled = false;
         el("btn-package").disabled = false;
+        // 有資料了，搜尋/清除才有意義；提示也不再需要
+        var hint = el("builder-hint"); if (hint) hint.hidden = true;
+        var sw = el("search-wrap"); if (sw) sw.hidden = false;
+        var cb = el("clear-btn"); if (cb) cb.hidden = false;
+        // 建立預覽鈕在左欄底部，右欄可能還停在上次的捲動位置——拉回頂端才看得到 PCA 圖
+        var pv = document.querySelector(".builder-preview"); if (pv) pv.scrollTop = 0;
         setTimeout(function () { global.dispatchEvent(new Event("resize")); if (FD.TreeView) FD.TreeView.resize(); }, 60);
         var w = out.warnings.length
           ? '<div class="warn">' + esc(T("bld.warnN", { n: out.warnings.length })) + '<br>' + out.warnings.slice(0, 6).map(esc).join("<br>") + '</div>'
@@ -300,6 +324,10 @@
     // 先綁表單，再初始化預覽模組：任何預覽模組出狀況都不該讓整個精靈失去互動。
     addViewRow("");
     el("add-view").addEventListener("click", function () { addViewRow(""); });
+    // 所有檔案選擇器（含動態新增的視圖列）統一用委派更新檔名顯示
+    document.addEventListener("change", function (e) {
+      if (e.target && e.target.type === "file") syncFilePick(e.target);
+    });
     el("f-taxa").addEventListener("change", function (e) { if (e.target.files[0]) onTaxaFile(e.target.files[0]); });
     el("btn-preview").addEventListener("click", preview);
     el("btn-zip").addEventListener("click", downloadZip);

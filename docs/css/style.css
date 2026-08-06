@@ -522,7 +522,13 @@ body.has-side-panel { padding-right: 340px; }
 .overview-drawer .stat-big { font-size: 40px; }
 
 /* 建立精靈 */
-.builder { flex: 1; display: grid; grid-template-columns: 400px 1fr; gap: var(--gap); padding: var(--gap); min-height: 0; overflow: hidden; }
+/* .app-shell 已經給了外距，這裡不再重複 padding；min-height:0 讓兩欄能各自捲動 */
+.builder { flex: 1; display: grid; grid-template-columns: minmax(360px, 420px) 1fr; gap: var(--gap); min-height: 0; overflow: hidden; }
+/* 桌機的分割視圖要真的分割：.app-shell 只有 min-height:100vh，內容一多就把外層撐長，
+   flex:1 便分不到可用空間 → 變成整頁捲動、兩欄各自捲動的設計失效。這裡鎖成視窗高度。*/
+@media (min-width: 1025px) {
+  .builder-shell { height: 100vh; overflow: hidden; }
+}
 .builder-form { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow-sm); overflow: auto; padding: 6px 4px; }
 .steps { list-style: none; margin: 0; padding: 0; }
 .steps > li { padding: 18px 20px; border-bottom: 1px solid var(--line); }
@@ -532,23 +538,78 @@ body.has-side-panel { padding-right: 340px; }
   display: block; width: 100%; margin-top: 3px; padding: 8px 10px; font-size: 13px;
   border: 1px solid var(--line-strong); border-radius: 8px; background: var(--panel-2); color: var(--ink); font-family: inherit;
 }
-.fld input[type=file] { display: block; width: 100%; margin-top: 4px; font-size: 12px; color: var(--dim); }
 .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.view-row { display: grid; grid-template-columns: 1fr auto auto auto; gap: 8px; align-items: center; margin: 8px 0; padding: 8px; background: var(--panel-2); border-radius: 8px; }
-.view-row .v-label { padding: 6px 8px; border: 1px solid var(--line-strong); border-radius: 6px; font-size: 12px; }
-.view-row .mini { font-size: 11px; color: var(--dim); }
-.view-row .mini input[type=file] { font-size: 11px; max-width: 130px; }
+
+/* 自訂檔案選擇：原生 input 疊在上層（保持可點、可被自動化測試操作），
+   視覺交給按鈕＋檔名，避免瀏覽器預設的英文 "Choose File / No file chosen"。*/
+.filepick {
+  position: relative; display: flex; align-items: center; gap: 8px;
+  margin-top: 5px; padding: 6px; border: 1px dashed var(--line-strong);
+  border-radius: 10px; background: var(--panel-2); cursor: pointer;
+  transition: border-color .15s, background .15s;
+}
+.filepick:hover { border-color: var(--accent); background: var(--panel-3); }
+.filepick.has-file { border-style: solid; border-color: var(--accent); }
+.filepick input[type=file] {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  opacity: 0; cursor: pointer;
+}
+.filepick-btn {
+  flex: none; padding: 5px 11px; border-radius: 999px; font-size: 11px; font-weight: 700;
+  background: var(--panel); border: 1px solid var(--line-strong); color: var(--ink-soft);
+}
+.filepick.has-file .filepick-btn { background: var(--accent); color: var(--on-accent); border-color: transparent; }
+.filepick-name {
+  flex: 1; min-width: 0; font-size: 11px; color: var(--dim);
+  font-family: var(--mono); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.filepick.has-file .filepick-name { color: var(--ink-soft); }
+
+/* PCA 視圖列：改為直式卡片。原本 1fr auto auto auto 四欄塞不進 400px 側欄，
+   刪除鈕會被擠出容器外、檔名被截斷。*/
+.view-row {
+  margin: 10px 0; padding: 10px 11px; background: var(--panel-2);
+  border: 1px solid var(--line); border-radius: var(--radius-sm);
+}
+.view-row-head { display: flex; align-items: center; gap: 8px; }
+.view-row .v-label {
+  flex: 1; min-width: 0; padding: 7px 10px; border: 1px solid var(--line-strong);
+  border-radius: 8px; font-size: 12px; background: var(--panel); color: var(--ink);
+}
+.view-row .v-del {
+  flex: none; width: 28px; height: 28px; padding: 0; display: grid; place-items: center;
+  border-radius: 8px; font-size: 13px; line-height: 1;
+}
+.view-row .v-del:hover { color: #ff9c9c; border-color: #ff9c9c; }
+.view-row .mini { display: block; font-size: 11px; color: var(--dim); margin-top: 8px; }
 .chips-pick { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
 .chip-pick { font-size: 12px; padding: 4px 10px; border: 1px solid var(--line-strong); border-radius: 999px; cursor: pointer; background: var(--panel-2); color: var(--ink-soft); }
-.builder-actions { display: flex; flex-direction: column; gap: 8px; padding: 14px 16px; }
+.builder-actions { display: flex; flex-direction: column; gap: 8px; padding: 14px 16px 6px; }
 .builder-actions .btn { justify-content: center; }
+/* 未建立預覽前，下載/打包是停用的——要讓人一眼看出「不是壞掉，是還沒輪到」*/
+.builder-actions .btn:disabled { opacity: .4; cursor: not-allowed; }
+.builder-actions .btn:disabled:hover { border-color: var(--line-strong); color: var(--ink-soft); }
+.builder-hint { padding: 0 16px 14px; font-size: 11px; color: var(--dim); text-align: center; }
 .build-msg { padding: 0 16px 16px; font-size: 12px; }
 .build-msg .ok { color: #6fe3b6; } .build-msg .err { color: #ff9c9c; }
 .build-msg .warn { margin-top: 6px; color: #e7d27a; background: rgba(231,210,122,.1); padding: 8px; border-radius: 8px; }
 .builder-preview { position: relative; overflow: auto; background: var(--bg-hero); border: 1px solid var(--line); border-radius: var(--radius); }
 .builder-preview .dashboard { padding: 0; }
-.preview-empty { height: 100%; display: grid; place-items: center; text-align: center; color: var(--dim); }
-.preview-empty .big { font-size: 18px; color: var(--ink-soft); }
+/* 空狀態：與其擺一行字空著三分之二畫面，不如把「要準備什麼」講清楚 */
+.preview-empty { height: 100%; display: grid; place-items: center; padding: 28px; color: var(--dim); }
+.preview-empty-inner { max-width: 520px; text-align: center; }
+.preview-empty .big { font-size: 19px; font-weight: 800; color: var(--ink); margin: 0 0 6px; }
+.preview-empty .sub { font-size: 13px; margin: 0 0 22px; }
+.pe-steps { display: grid; gap: 10px; text-align: left; margin-bottom: 20px; }
+.pe-step { display: flex; gap: 11px; align-items: flex-start; padding: 11px 13px;
+  background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-sm); }
+.pe-step .n { flex: none; width: 21px; height: 21px; border-radius: 50%; display: grid; place-items: center;
+  background: var(--accent); color: var(--on-accent); font-size: 11px; font-weight: 800; }
+.pe-step .t { font-size: 12px; color: var(--ink-soft); line-height: 1.55; }
+.pe-shape { text-align: left; background: var(--panel-3); border: 1px solid var(--line);
+  border-radius: var(--radius-sm); padding: 12px 14px; overflow-x: auto; }
+.pe-shape .cap { font-size: 11px; color: var(--dim); margin-bottom: 7px; }
+.pe-shape code { font-family: var(--mono); font-size: 11.5px; color: var(--ink-soft); white-space: pre; display: block; line-height: 1.75; }
 .modal-card.wide { width: min(680px, 94vw); }
 .tut-steps { line-height: 1.7; padding-left: 20px; }
 .tut-steps li { margin: 8px 0; }
@@ -576,8 +637,8 @@ body.has-side-panel { padding-right: 340px; }
 }
 
 /* ===== 手機 RWD：頂部列收成漢堡選單 + 高度自適應 =====
-   收合規則一律限定在 .app-shell 內（＝檢視器 index.html）。builder.html 的頂部列
-   結構不同、也沒有漢堡可以還原，若不限定範圍會把它的按鈕永久藏起來。*/
+   收合規則限定在 .viewer-shell（＝檢視器 index.html）。builder.html 也用 .app-shell，
+   但它的頂部列結構不同、沒有漢堡可以還原，掛在 .app-shell 上會把它的按鈕永久藏死。*/
 @media (max-width: 720px) {
   .menu-toggle { display: grid; }
   .topbar { flex-wrap: wrap; gap: 10px; margin-bottom: 12px; }
@@ -585,30 +646,26 @@ body.has-side-panel { padding-right: 340px; }
   .topbar > .search-wrap .sb-pill { width: 100%; }
   .topbar-actions { order: 2; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
   /* 預設收合：導覽膠囊、資料集、次要動作藏起，只留漢堡+搜尋+設定+logo */
-  .app-shell .nav-pills, .app-shell .dataset-switch { display: none; flex-basis: 100%; }
-  .app-shell #overview-toggle, .app-shell #side-panel-toggle,
-  .app-shell #download-data, .app-shell #clear-btn, .app-shell #bell-tile { display: none; }
+  .viewer-shell .nav-pills, .viewer-shell .dataset-switch { display: none; flex-basis: 100%; }
+  .viewer-shell #overview-toggle, .viewer-shell #side-panel-toggle,
+  .viewer-shell #download-data, .viewer-shell #clear-btn, .viewer-shell #bell-tile { display: none; }
   .logo-tile { display: none; }   /* 手機省空間，logo 為裝飾性 */
   /* 展開（點漢堡）*/
-  .app-shell .topbar.nav-open .nav-pills { display: flex; flex-wrap: wrap; order: 3; }
-  .app-shell .topbar.nav-open .dataset-switch { display: flex; order: 4; }
-  .app-shell .topbar.nav-open #overview-toggle,
-  .app-shell .topbar.nav-open #side-panel-toggle,
-  .app-shell .topbar.nav-open #download-data,
-  .app-shell .topbar.nav-open #clear-btn,
-  .app-shell .topbar.nav-open #bell-tile { display: inline-flex; }
-  .app-shell .topbar.nav-open .dataset-switch .axis-select { flex: 1; }
+  .viewer-shell .topbar.nav-open .nav-pills { display: flex; flex-wrap: wrap; order: 3; }
+  .viewer-shell .topbar.nav-open .dataset-switch { display: flex; order: 4; }
+  .viewer-shell .topbar.nav-open #overview-toggle,
+  .viewer-shell .topbar.nav-open #side-panel-toggle,
+  .viewer-shell .topbar.nav-open #download-data,
+  .viewer-shell .topbar.nav-open #clear-btn,
+  .viewer-shell .topbar.nav-open #bell-tile { display: inline-flex; }
+  .viewer-shell .topbar.nav-open .dataset-switch .axis-select { flex: 1; }
 
   /* 建立精靈：標題可縮、表單單欄、檔案輸入不撐破版面 */
   .title { flex: 1 1 100%; min-width: 0; }
   .title .subtitle { display: none; }        /* 手機省空間，副標為說明性 */
-  .builder { padding: 10px; gap: 10px; }
+  .builder { gap: 10px; }
   .builder-form .steps > li { padding: 14px 14px; }
   .grid2 { grid-template-columns: 1fr; }
-  .view-row { grid-template-columns: 1fr; }
-  .view-row > * { min-width: 0; }
-  .view-row .mini input[type=file] { width: 100%; max-width: 100%; }
-  .view-row .v-del { justify-self: end; }
   .dl-actions .btn { flex: 1 1 100%; justify-content: center; }
 
   .hero { padding: 22px 18px; }
