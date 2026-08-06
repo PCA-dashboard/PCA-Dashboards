@@ -3,17 +3,68 @@
 (function (global) {
   "use strict";
   var FD = global.FrogDash, Store = FD.Store, UB = FD.UnifiedBuild;
+  function T(k, p) { return FD.t ? FD.t(k, p) : k; }
 
-  // 打包時要抓進成品的檢視器檔案（同源，Pages/http 皆可 fetch）
-  var APP_FILES = [
-    "index.html", "builder.html", "css/style.css",
-    "vendor/jszip/jszip-3.10.1.min.js",
-    "vendor/plotly/plotly-2.35.2.min.js",
-    "vendor/phylocanvas/phylocanvas.gl-1.64.0.bundle.js",
-    "js/state.js", "js/zip-loader.js", "js/unified-build.js", "js/groups.js",
-    "js/legend.js", "js/pca-view.js", "js/tree-view.js", "js/info-panel.js",
-    "js/search.js", "js/app.js", "js/builder.js"
-  ];
+  // 打包時要抓進成品的檢視器檔案（同源，Pages/http 皆可 fetch）。
+  // 只列出「進入點」；其餘 css/js/vendor 由 collectAppFiles() 直接從 HTML 掃出來，
+  // 避免日後新增模組時忘了加進清單，打包出 404 的壞站。
+  var ENTRY_PAGES = ["index.html", "builder.html"];
+  // 非必要、但帶著更完整的檔案（缺了不算失敗）：讓打包出的站也能看格式說明
+  var EXTRA_FILES = ["unified_zip_format.md"];
+
+  /** 把相對路徑正規化成以站台根為基準（處理 ../）。 */
+  function resolvePath(base, rel) {
+    if (/^\//.test(rel)) return rel.replace(/^\/+/, "");
+    var dir = base.indexOf("/") >= 0 ? base.replace(/\/[^/]*$/, "").split("/") : [];
+    rel.split("/").forEach(function (seg) {
+      if (seg === "." || seg === "") return;
+      if (seg === "..") dir.pop();
+      else dir.push(seg);
+    });
+    return dir.join("/");
+  }
+  function packable(p) {
+    // 略過內嵌 data:、外部網址、以及打包時才產生的烤入資料
+    return p && !/^(data:|https?:|\/\/|#)/i.test(p) && p !== "data/baked.js";
+  }
+
+  /** 掃描進入點 HTML 的 <script src>/<link href>，再遞迴追 CSS 的 @import 與 url()，
+   *  組出完整打包清單（含 vendored 字型），避免手動清單漏檔導致打包出 404 的壞站。 */
+  function collectAppFiles() {
+    var files = ENTRY_PAGES.slice();
+    function add(p) { if (files.indexOf(p) < 0) { files.push(p); return true; } return false; }
+
+    function scanCss(cssPath) {
+      return fetch(cssPath).then(function (r) {
+        if (!r.ok) throw new Error("抓取失敗：" + cssPath + "（HTTP " + r.status + "）");
+        return r.text();
+      }).then(function (css) {
+        var re = /url\(\s*['"]?([^'")]+)['"]?\s*\)|@import\s+['"]([^'"]+)['"]/gi, m, nested = [];
+        while ((m = re.exec(css))) {
+          var raw = (m[1] || m[2] || "").split("?")[0].split("#")[0];
+          if (!packable(raw)) continue;
+          var p = resolvePath(cssPath, raw);
+          if (add(p) && /\.css$/i.test(p)) nested.push(scanCss(p));
+        }
+        return Promise.all(nested);
+      });
+    }
+
+    return Promise.all(ENTRY_PAGES.map(function (page) {
+      return fetch(page).then(function (r) {
+        if (!r.ok) throw new Error("抓取失敗：" + page + "（HTTP " + r.status + "）");
+        return r.text();
+      }).then(function (html) {
+        var re = /<(?:script|link)\b[^>]*?\b(?:src|href)\s*=\s*"([^"]+)"/gi, m, css = [];
+        while ((m = re.exec(html))) {
+          var p = m[1].split("?")[0].split("#")[0];
+          if (!packable(p)) continue;
+          if (add(resolvePath(page, p)) && /\.css$/i.test(p)) css.push(scanCss(resolvePath(page, p)));
+        }
+        return Promise.all(css);
+      });
+    })).then(function () { return files; });
+  }
 
   var lastZipBlob = null;
   var taxaText = null, taxaHeader = [];
@@ -40,27 +91,32 @@
     var wrap = document.createElement("div");
     wrap.className = "view-row";
     wrap.innerHTML =
-      '<input type="text" class="v-label" placeholder="視圖名稱（例：Tadpole PCA）" value="' + (label || "") + '" />' +
-      '<label class="mini">分數 CSV <input type="file" class="v-scores" accept=".csv" /></label>' +
-      '<label class="mini">variance（可選）<input type="file" class="v-var" accept=".csv" /></label>' +
-      '<button class="btn small v-del" title="移除">✕</button>';
+      '<input type="text" class="v-label" placeholder="' + esc(T("bld.viewName")) + '" value="' + esc(label || "") + '" />' +
+      '<label class="mini">' + esc(T("bld.vScores")) + ' <input type="file" class="v-scores" accept=".csv" /></label>' +
+      '<label class="mini">' + esc(T("bld.vVar")) + '<input type="file" class="v-var" accept=".csv" /></label>' +
+      '<button class="btn small v-del" title="' + esc(T("bld.vDel")) + '">✕</button>';
     wrap.querySelector(".v-del").addEventListener("click", function () { wrap.remove(); });
     el("views-list").appendChild(wrap);
   }
 
   // ---- 分類欄位對應 ----
+  // fallbackIdx 給 null 代表「猜不到就不要選」（用於可留空的欄位，如圖片欄）
   function guess(header, cands, fallbackIdx) {
     for (var i = 0; i < cands.length; i++) {
       var idx = header.findIndex(function (h) { return h.toLowerCase() === cands[i]; });
       if (idx >= 0) return header[idx];
     }
+    if (fallbackIdx == null) return "";
     return header[fallbackIdx] != null ? header[fallbackIdx] : header[0];
   }
   function fillSelect(sel, header, chosen, allowNone) {
     sel.innerHTML = "";
-    if (allowNone) { var o = document.createElement("option"); o.value = ""; o.textContent = "（無）"; sel.appendChild(o); }
-    header.forEach(function (h) {
-      var o = document.createElement("option"); o.value = h; o.textContent = h;
+    if (allowNone) { var o = document.createElement("option"); o.value = ""; o.textContent = T("bld.none"); sel.appendChild(o); }
+    header.forEach(function (h, i) {
+      var o = document.createElement("option");
+      o.value = h;
+      // R 的 write.csv 會把 row names 欄寫成空表頭；值仍必須保持原樣才 join 得到
+      o.textContent = h === "" ? T("bld.firstCol", { i: i + 1 }) : h;
       if (h === chosen) o.selected = true; sel.appendChild(o);
     });
   }
@@ -68,29 +124,30 @@
     readFileText(file).then(function (text) {
       taxaText = text;
       var rows = FD.parseCSV(text);
-      taxaHeader = rows[0] || [];
-      if (taxaHeader[0] === "" || taxaHeader[0] == null) taxaHeader[0] = "(第一欄)";
+      taxaHeader = (rows[0] || []).map(function (h) { return h == null ? "" : h; });
       fillSelect(el("m-id"), taxaHeader, guess(taxaHeader, ["species_id", "id", "gensp"], 0));
       fillSelect(el("m-label"), taxaHeader, guess(taxaHeader, ["display_label", "gensp", "name", "label"], 0));
       fillSelect(el("m-group"), taxaHeader, guess(taxaHeader, ["clade", "fam.subfam", "subfamily", "family", "group"], Math.min(1, taxaHeader.length - 1)));
-      fillSelect(el("m-image"), taxaHeader, guess(taxaHeader, ["image", "img", "photo"], -1), true);
+      fillSelect(el("m-image"), taxaHeader, guess(taxaHeader, ["image", "img", "photo"], null), true);
       // 資訊欄位複選
       var box = el("m-info"); box.innerHTML = "";
       taxaHeader.forEach(function (h) {
-        var id = "info_" + h;
         var lab = document.createElement("label"); lab.className = "chip-pick";
         lab.innerHTML = '<input type="checkbox" value="' + h.replace(/"/g, "&quot;") + '" /> ' + h;
         box.appendChild(lab);
       });
       el("taxa-map").hidden = false;
+    }).catch(function (e) {
+      console.error(e);
+      msg('<span class="err">' + esc(T("bld.errTaxa", { msg: e.message || e })) + "</span>");
     });
   }
 
   // ---- 收集輸入 ----
   function collectInputs() {
-    if (!taxaText) throw uiErr("請先上傳分類 CSV");
+    if (!taxaText) throw uiErr(T("bld.needTaxa"));
     var rows = Array.prototype.slice.call(document.querySelectorAll("#views-list .view-row"));
-    if (!rows.length) throw uiErr("請至少新增一個 PCA 視圖");
+    if (!rows.length) throw uiErr(T("bld.needView"));
 
     var infoCols = Array.prototype.slice.call(document.querySelectorAll("#m-info input:checked"))
       .map(function (c) { return c.value; });
@@ -99,7 +156,7 @@
       var label = r.querySelector(".v-label").value.trim();
       var sf = r.querySelector(".v-scores").files[0];
       var vf = r.querySelector(".v-var").files[0];
-      if (!sf) throw uiErr("視圖「" + (label || "未命名") + "」尚未選擇分數 CSV");
+      if (!sf) throw uiErr(T("bld.needScores", { label: label || T("bld.unnamed") }));
       return Promise.all([readFileText(sf), vf ? readFileText(vf) : Promise.resolve(null)])
         .then(function (res) { return { label: label || sf.name.replace(/\.csv$/i, ""), scoresText: res[0], varianceText: res[1] }; });
     });
@@ -131,7 +188,7 @@
   }
 
   function preview() {
-    msg("建立中…");
+    msg(T("bld.building"));
     buildBlob().then(function (out) {
       lastZipBlob = out.blob;
       return FD.Loader.fromBlob(out.blob).then(function (model) {
@@ -142,13 +199,13 @@
         el("btn-package").disabled = false;
         setTimeout(function () { global.dispatchEvent(new Event("resize")); if (FD.TreeView) FD.TreeView.resize(); }, 60);
         var w = out.warnings.length
-          ? '<div class="warn">⚠️ ' + out.warnings.length + ' 項提醒：<br>' + out.warnings.slice(0, 6).map(esc).join("<br>") + '</div>'
+          ? '<div class="warn">' + esc(T("bld.warnN", { n: out.warnings.length })) + '<br>' + out.warnings.slice(0, 6).map(esc).join("<br>") + '</div>'
           : "";
-        msg('<span class="ok">✔ 預覽已更新（' + model.joinReport.nTaxa + ' 物種）</span>' + w, "");
+        msg('<span class="ok">' + esc(T("bld.ok", { n: model.joinReport.nTaxa })) + '</span>' + w, "");
       });
     }).catch(function (e) {
       console.error(e);
-      msg('<span class="err">✗ 建立失敗：' + esc(e.userFacing ? e.message : (e.message || e)) + "</span>", "");
+      msg('<span class="err">' + esc(T("bld.errBuild", { msg: e.userFacing ? e.message : (e.message || e) })) + "</span>", "");
     });
   }
 
@@ -171,16 +228,24 @@
     });
   }
   function packageSite() {
-    if (!lastZipBlob) { msg('<span class="err">請先建立預覽</span>'); return; }
-    msg("打包中…（抓取檢視器與函式庫）");
+    if (!lastZipBlob) { msg('<span class="err">' + esc(T("bld.needPreview")) + '</span>'); return; }
+    msg(T("bld.packing"));
     var out = new JSZip();
-    var fetches = APP_FILES.map(function (path) {
-      return fetch(path).then(function (r) {
-        if (!r.ok) throw new Error("抓取失敗：" + path + "（HTTP " + r.status + "）");
-        return r.blob().then(function (b) { out.file(path, b); });
-      });
-    });
-    Promise.all(fetches)
+    collectAppFiles()
+      .then(function (appFiles) {
+        var required = appFiles.map(function (path) {
+          return fetch(path).then(function (r) {
+            if (!r.ok) throw new Error("抓取失敗：" + path + "（HTTP " + r.status + "）");
+            return r.blob().then(function (b) { out.file(path, b); });
+          });
+        });
+        var optional = EXTRA_FILES.map(function (path) {
+          return fetch(path).then(function (r) {
+            return r.ok ? r.blob().then(function (b) { out.file(path, b); }) : null;
+          }).catch(function () { return null; });
+        });
+        return Promise.all(required.concat(optional));
+      })
       .then(function () { return blobToBase64(lastZipBlob); })
       .then(function (b64) {
         out.file("data/baked.js",
@@ -194,9 +259,9 @@
         el("tut-filename").textContent = fname;
         downloadBlob(siteBlob, fname);
         el("tutorial-modal").hidden = false;
-        msg('<span class="ok">✔ 已下載 ' + esc(fname) + '</span>');
+        msg('<span class="ok">' + esc(T("bld.dlDone", { name: fname })) + '</span>');
       })
-      .catch(function (e) { console.error(e); msg('<span class="err">打包失敗：' + esc(e.message || e) + "</span>"); });
+      .catch(function (e) { console.error(e); msg('<span class="err">' + esc(T("bld.errPack", { msg: e.message || e })) + "</span>"); });
   }
 
   function slugTitle() {
@@ -225,15 +290,14 @@
     });
     var fit = document.querySelector(".fit-tree"); if (fit) fit.addEventListener("click", function () { FD.TreeView.resize(); });
     var exp = document.querySelector(".expand-tree"); if (exp) exp.addEventListener("click", function () {
-      var e = FD.TreeView.toggleExpandAll(); exp.textContent = e ? "收合深層" : "展開全部";
+      var e = FD.TreeView.toggleExpandAll(); exp.textContent = T(e ? "tree.collapse" : "tree.expandAll");
     });
     var dlt = document.querySelector(".dl-tree"); if (dlt) dlt.addEventListener("click", function () { FD.TreeView.exportPNG(); });
-    el("clear-btn").addEventListener("click", function () { Store.clearHighlight(); });
+    var clr = el("clear-btn"); if (clr) clr.addEventListener("click", function () { Store.clearHighlight(); });
   }
 
   function main() {
-    FD.initPCA(); FD.TreeView.init(); FD.initInfoPanel(); FD.initSearch();
-    initPreviewControls();
+    // 先綁表單，再初始化預覽模組：任何預覽模組出狀況都不該讓整個精靈失去互動。
     addViewRow("");
     el("add-view").addEventListener("click", function () { addViewRow(""); });
     el("f-taxa").addEventListener("change", function (e) { if (e.target.files[0]) onTaxaFile(e.target.files[0]); });
@@ -243,6 +307,15 @@
     document.querySelectorAll("[data-close-tut]").forEach(function (x) {
       x.addEventListener("click", function () { el("tutorial-modal").hidden = true; });
     });
+
+    // 預覽用模組（重用檢視器）：即使某個模組初始化失敗，左側表單仍可正常操作。
+    try {
+      FD.initPCA(); FD.TreeView.init(); FD.initInfoPanel(); FD.initSearch();
+      initPreviewControls();
+    } catch (e) {
+      console.error(e);
+      msg('<span class="err">' + esc(T("bld.errInit", { msg: e.message || e })) + "</span>");
+    }
   }
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", main);

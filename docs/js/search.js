@@ -78,6 +78,7 @@
 
   // ---- 動效：聚焦粒子 / 點擊漣漪爆散 / icon 擺動 ----
   function spawnFocusParticles() {
+    if (!particleHost) return;
     particleHost.innerHTML = "";
     for (var i = 0; i < 18; i++) {
       var p = document.createElement("span");
@@ -94,6 +95,7 @@
   }
 
   function clickBurst(e) {
+    if (!pill) return;
     var rect = pill.getBoundingClientRect();
     var x = e.clientX - rect.left, y = e.clientY - rect.top;
     wrap.classList.add("clicked");
@@ -137,6 +139,12 @@
     particleHost = document.getElementById("sb-particles");
     submitBtn = document.getElementById("sb-submit");
 
+    // 沒有搜尋框的頁面直接跳過；裝飾性外框（pill/粒子/表單）為選配，
+    // 缺少時以離線節點承接 class 切換，讓精簡版頁面（如建立精靈）也能用搜尋。
+    if (!input || !list) return;
+    if (!wrap) wrap = document.createElement("div");
+    if (!particleHost) particleHost = document.createElement("span");
+
     input.addEventListener("input", onInput);
     input.addEventListener("keydown", onKey);
     input.addEventListener("focus", function () {
@@ -153,12 +161,13 @@
       }, 200);
     });
     // 點 pill 任一處 → 聚焦 input + 漣漪/爆散
-    pill.addEventListener("click", function (e) {
+    if (pill) pill.addEventListener("click", function (e) {
       if (e.target.closest(".sb-submit")) return;   // 送出鈕不觸發爆散
       clickBurst(e);
       input.focus();
     });
-    form.addEventListener("submit", onSubmit);
+    if (form) form.addEventListener("submit", onSubmit);
+    else input.addEventListener("keydown", function (e) { if (e.key === "Enter") onSubmit(e); });
 
     Store.on("data", buildIndex);
   }

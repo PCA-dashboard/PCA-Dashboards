@@ -5,6 +5,9 @@
 
   var statusEl, welcomeEl, dashboardEl;
 
+  // 目前資料集的來源，供「下載資料」使用：{ url } 或 { blob }（烤入 / 上傳的情況）
+  var currentSource = null;
+
   function setStatus(msg, kind) {
     if (!msg) { statusEl.hidden = true; statusEl.className = "status"; return; }
     statusEl.hidden = false;
@@ -43,10 +46,12 @@
 
   function initLoaders() {
     document.getElementById("zip-input").addEventListener("change", function (e) {
-      var f = e.target.files[0]; if (f) loadVia(FD.Loader.fromBlob(f), "讀取 " + f.name);
+      var f = e.target.files[0];
+      if (f) { currentSource = { blob: f, name: f.name }; loadVia(FD.Loader.fromBlob(f), "讀取 " + f.name); }
     });
     var demoBtn = document.getElementById("demo-btn");
     if (demoBtn) demoBtn.addEventListener("click", function () {
+      currentSource = { url: "data/frog_demo.zip", name: "frog_demo.zip" };
       loadVia(FD.Loader.fromUrl("data/frog_demo.zip"), "載入青蛙範例");
     });
 
@@ -60,7 +65,10 @@
     });
     drop.addEventListener("drop", function (e) {
       var f = e.dataTransfer.files[0];
-      if (f && /\.zip$/i.test(f.name)) loadVia(FD.Loader.fromBlob(f), "讀取 " + f.name);
+      if (f && /\.zip$/i.test(f.name)) {
+        currentSource = { blob: f, name: f.name };
+        loadVia(FD.Loader.fromBlob(f), "讀取 " + f.name);
+      }
     });
   }
 
@@ -69,6 +77,7 @@
     var bin = atob(global.FROG_BAKED_ZIP_BASE64);
     var bytes = new Uint8Array(bin.length);
     for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    currentSource = { blob: new Blob([bytes], { type: "application/zip" }), name: "dataset.zip" };
     loadVia(FD.Loader.fromArrayBuffer(bytes.buffer), "載入內嵌資料");
   }
 
@@ -87,6 +96,7 @@
     if (picker) picker.value = ds.id;
     if (updateHash) location.hash = "dataset=" + ds.id;
     var gbifField = ds.gbif_fallback === true ? "display_label" : (ds.gbif_fallback && ds.gbif_fallback.name_field) || null;
+    currentSource = { url: ds.zip, name: ds.id + ".zip", ds: ds };
     loadVia(FD.Loader.fromUrl(ds.zip), "載入 " + (ds.short || ds.title), ds.remote_images, gbifField);
   }
   function initGallery() {
@@ -109,6 +119,56 @@
         selectDataset(hashId() || cat.default || cat.datasets[0].id, false);
         return true;
       }).catch(function () { return false; });
+  }
+
+  // ---- 下載此資料集的統一 Zip（讓看完 demo 的人照著格式做自己的）----
+  function saveBlob(blob, name) {
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url; a.download = name; a.click();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 2000);
+  }
+  function downloadCurrentData() {
+    var T = function (k, p) { return FD.t ? FD.t(k, p) : k; };
+    var note = document.getElementById("dl-note");
+    if (!currentSource) { if (note) note.textContent = T("dl.none"); return; }
+    var name = currentSource.name || "dataset.zip";
+    if (currentSource.blob) { saveBlob(currentSource.blob, name); return; }
+    if (note) note.textContent = T("dl.fetching");
+    fetch(currentSource.url).then(function (r) {
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      return r.blob();
+    }).then(function (b) {
+      saveBlob(b, name);
+      if (note) note.textContent = T("dl.done", { name: name, size: (b.size / 1024).toFixed(0) });
+    }).catch(function (e) {
+      console.error(e);
+      if (note) note.textContent = T("dl.failed", { msg: e.message || e });
+    });
+  }
+  function initDataDownload() {
+    var btn = document.getElementById("download-data");
+    var modal = document.getElementById("data-modal");
+    if (!btn || !modal) return;
+    // 格式說明文件在「精靈打包出來的站」裡不存在，探測不到就把連結收起來
+    var spec = document.getElementById("dl-spec");
+    if (spec) fetch(spec.getAttribute("href"), { method: "HEAD" })
+      .then(function (r) { spec.hidden = !r.ok; })
+      .catch(function () { spec.hidden = true; });
+
+    btn.addEventListener("click", function () {
+      var note = document.getElementById("dl-note");
+      if (note) note.textContent = "";
+      modal.hidden = false;
+    });
+    modal.querySelectorAll("[data-close-data]").forEach(function (x) {
+      x.addEventListener("click", function () { modal.hidden = true; });
+    });
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape" && !modal.hidden) modal.hidden = true;
+    });
+    var zipBtn = document.getElementById("dl-zip");
+    if (zipBtn) zipBtn.addEventListener("click", downloadCurrentData);
   }
 
   function initButtons() {
@@ -179,6 +239,7 @@
     if (FD.initOverview) FD.initOverview();
     initLoaders();
     initButtons();
+    initDataDownload();
 
     // 載入來源優先序：烤入資料（單站）→ gallery 目錄 → 上傳畫面
     if (global.FROG_BAKED_ZIP_BASE64) loadBaked();

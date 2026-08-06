@@ -553,7 +553,14 @@ body.has-side-panel { padding-right: 340px; }
 .tut-steps { line-height: 1.7; padding-left: 20px; }
 .tut-steps li { margin: 8px 0; }
 .tut-steps code, p code { background: var(--panel-3); padding: 1px 5px; border-radius: 4px; font-size: 12px; font-family: var(--mono); }
-.tut-actions { margin-top: 14px; text-align: right; }
+.tut-actions { margin-top: 14px; text-align: right; display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
+
+/* 下載資料視窗：統一 Zip 結構說明 */
+.dl-actions { display: flex; gap: 10px; flex-wrap: wrap; margin: 14px 0 6px; }
+.dl-tree-txt { background: var(--panel-3); border: 1px solid var(--line); border-radius: 8px;
+  padding: 12px 14px; overflow-x: auto; font-size: 12px; line-height: 1.8; }
+.dl-tree-txt code { font-family: var(--mono); white-space: pre; }
+#data-modal h3 { margin: 16px 0 6px; font-size: 13px; }
 
 /* 響應式 */
 @media (max-width: 1180px) { .ov-grid { grid-template-columns: 1fr; } }
@@ -568,7 +575,9 @@ body.has-side-panel { padding-right: 340px; }
   .recent-grid { grid-template-columns: 1fr; }
 }
 
-/* ===== 手機 RWD：頂部列收成漢堡選單 + 高度自適應 ===== */
+/* ===== 手機 RWD：頂部列收成漢堡選單 + 高度自適應 =====
+   收合規則一律限定在 .app-shell 內（＝檢視器 index.html）。builder.html 的頂部列
+   結構不同、也沒有漢堡可以還原，若不限定範圍會把它的按鈕永久藏起來。*/
 @media (max-width: 720px) {
   .menu-toggle { display: grid; }
   .topbar { flex-wrap: wrap; gap: 10px; margin-bottom: 12px; }
@@ -576,17 +585,31 @@ body.has-side-panel { padding-right: 340px; }
   .topbar > .search-wrap .sb-pill { width: 100%; }
   .topbar-actions { order: 2; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
   /* 預設收合：導覽膠囊、資料集、次要動作藏起，只留漢堡+搜尋+設定+logo */
-  .nav-pills, .dataset-switch { display: none; flex-basis: 100%; }
-  #overview-toggle, #side-panel-toggle, #clear-btn, #bell-tile { display: none; }
+  .app-shell .nav-pills, .app-shell .dataset-switch { display: none; flex-basis: 100%; }
+  .app-shell #overview-toggle, .app-shell #side-panel-toggle,
+  .app-shell #download-data, .app-shell #clear-btn, .app-shell #bell-tile { display: none; }
   .logo-tile { display: none; }   /* 手機省空間，logo 為裝飾性 */
   /* 展開（點漢堡）*/
-  .topbar.nav-open .nav-pills { display: flex; flex-wrap: wrap; order: 3; }
-  .topbar.nav-open .dataset-switch { display: flex; order: 4; }
-  .topbar.nav-open #overview-toggle,
-  .topbar.nav-open #side-panel-toggle,
-  .topbar.nav-open #clear-btn,
-  .topbar.nav-open #bell-tile { display: inline-flex; }
-  .topbar.nav-open .dataset-switch .axis-select { flex: 1; }
+  .app-shell .topbar.nav-open .nav-pills { display: flex; flex-wrap: wrap; order: 3; }
+  .app-shell .topbar.nav-open .dataset-switch { display: flex; order: 4; }
+  .app-shell .topbar.nav-open #overview-toggle,
+  .app-shell .topbar.nav-open #side-panel-toggle,
+  .app-shell .topbar.nav-open #download-data,
+  .app-shell .topbar.nav-open #clear-btn,
+  .app-shell .topbar.nav-open #bell-tile { display: inline-flex; }
+  .app-shell .topbar.nav-open .dataset-switch .axis-select { flex: 1; }
+
+  /* 建立精靈：標題可縮、表單單欄、檔案輸入不撐破版面 */
+  .title { flex: 1 1 100%; min-width: 0; }
+  .title .subtitle { display: none; }        /* 手機省空間，副標為說明性 */
+  .builder { padding: 10px; gap: 10px; }
+  .builder-form .steps > li { padding: 14px 14px; }
+  .grid2 { grid-template-columns: 1fr; }
+  .view-row { grid-template-columns: 1fr; }
+  .view-row > * { min-width: 0; }
+  .view-row .mini input[type=file] { width: 100%; max-width: 100%; }
+  .view-row .v-del { justify-self: end; }
+  .dl-actions .btn { flex: 1 1 100%; justify-content: center; }
 
   .hero { padding: 22px 18px; }
   .hero-title { font-size: 30px; }

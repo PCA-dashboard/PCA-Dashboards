@@ -11,7 +11,7 @@
       d=p==='auto'?(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'):p;
       r.setAttribute('data-theme',d);r.setAttribute('data-accent',a);}catch(e){}})();
   </script>
-  <link rel="stylesheet" href="css/style.css?v=13" />
+  <link rel="stylesheet" href="css/style.css?v=14" />
   <script src="vendor/jszip/jszip-3.10.1.min.js"></script>
   <script src="vendor/plotly/plotly-2.35.2.min.js"></script>
   <script src="vendor/phylocanvas/phylocanvas.gl-1.64.0.bundle.js"></script>
@@ -19,16 +19,43 @@
 <body>
   <header class="topbar">
     <div class="title">
-      <h1>建立精靈</h1>
-      <p class="subtitle">上傳 PCA 資料 → 即時互動預覽 → 打包成可放 GitHub Pages 的無伺服器網頁</p>
+      <h1 data-i18n="bld.title">建立精靈</h1>
+      <p class="subtitle" data-i18n="bld.subtitle">上傳 PCA 資料 → 即時互動預覽 → 打包成可放 GitHub Pages 的無伺服器網頁</p>
     </div>
     <div class="topbar-actions">
-      <div class="search-wrap">
-        <input id="search-input" type="search" placeholder="搜尋物種…" autocomplete="off" aria-label="搜尋物種" />
+      <div class="search-wrap" id="search-wrap">
+        <input id="search-input" type="search" placeholder="搜尋物種…" data-i18n-ph="search.ph" autocomplete="off" aria-label="搜尋物種" />
         <ul id="search-results" class="search-results" hidden></ul>
       </div>
-      <button id="clear-btn" class="btn" title="清除選取">清除選取</button>
-      <a class="btn" href="index.html">開啟檢視器</a>
+      <button id="clear-btn" class="btn" data-i18n-title="btn.clear" data-i18n="btn.clear" title="清除選取">清除選取</button>
+      <a class="btn" href="index.html" data-i18n="bld.openViewer">開啟檢視器</a>
+      <div class="settings-wrap">
+        <button id="settings-tile" class="tile" data-i18n-title="set.title" title="設定" aria-label="設定">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg>
+        </button>
+        <div class="settings-menu" id="settings-menu" hidden>
+          <h4 data-i18n="set.title">設定</h4>
+          <div class="set-lbl" data-i18n="set.lang">語言 / Language</div>
+          <div class="set-row" id="set-lang">
+            <div class="set-opt" data-lang="zh">中文</div>
+            <div class="set-opt" data-lang="en">EN</div>
+          </div>
+          <div class="set-lbl" data-i18n="set.theme">主題 / Theme</div>
+          <div class="set-row" id="set-theme">
+            <div class="set-opt" data-themepref="light" data-i18n="set.light">淺色</div>
+            <div class="set-opt" data-themepref="dark" data-i18n="set.dark">深色</div>
+            <div class="set-opt" data-themepref="auto" data-i18n="set.auto">自動</div>
+          </div>
+          <div class="set-lbl" data-i18n="set.accent">主視覺色 / Accent</div>
+          <div class="accent-row" id="set-accent">
+            <div class="accent-dot" data-accent="lime"   style="background:#d4fb3c;color:#d4fb3c"></div>
+            <div class="accent-dot" data-accent="cyan"   style="background:#3fc0e0;color:#3fc0e0"></div>
+            <div class="accent-dot" data-accent="violet" style="background:#a98bff;color:#a98bff"></div>
+            <div class="accent-dot" data-accent="amber"  style="background:#f4b53a;color:#f4b53a"></div>
+            <div class="accent-dot" data-accent="coral"  style="background:#ff8a66;color:#ff8a66"></div>
+          </div>
+        </div>
+      </div>
     </div>
   </header>
 
@@ -39,50 +66,50 @@
     <aside class="builder-form">
       <ol class="steps">
         <li>
-          <h3>① 資料集資訊</h3>
-          <label class="fld">標題 <input id="f-title" type="text" placeholder="例：My frog PCA" /></label>
+          <h3 data-i18n="bld.s1">① 資料集資訊</h3>
+          <label class="fld"><span data-i18n="bld.fTitle">標題</span> <input id="f-title" type="text" placeholder="例：My frog PCA" data-i18n-ph="bld.phTitle" /></label>
           <div class="grid2">
-            <label class="fld">DOI（可選）<input id="f-doi" type="text" placeholder="10.xxxx/xxxx" /></label>
-            <label class="fld">來源網址（可選）<input id="f-source" type="text" placeholder="https://…" /></label>
+            <label class="fld"><span data-i18n="bld.fDoi">DOI（可選）</span><input id="f-doi" type="text" placeholder="10.xxxx/xxxx" /></label>
+            <label class="fld"><span data-i18n="bld.fSource">來源網址（可選）</span><input id="f-source" type="text" placeholder="https://…" /></label>
           </div>
-          <label class="fld">引用（可選）<textarea id="f-cite" rows="2" placeholder="Author et al. (Year) …"></textarea></label>
+          <label class="fld"><span data-i18n="bld.fCite">引用（可選）</span><textarea id="f-cite" rows="2" placeholder="Author et al. (Year) …"></textarea></label>
         </li>
 
         <li>
-          <h3>② PCA 視圖</h3>
-          <p class="dim small">每個視圖上傳一份「物種 × PC 分數」CSV（第一欄為 species_id，其餘為各 PC）。可選附上 variance CSV（欄 variance_explained）；未提供時自動由分數估算。</p>
+          <h3 data-i18n="bld.s2">② PCA 視圖</h3>
+          <p class="dim small" data-i18n="bld.s2hint">每個視圖上傳一份「物種 × PC 分數」CSV（第一欄為 species_id，其餘為各 PC）。可選附上 variance CSV（欄 variance_explained）；未提供時自動由分數估算。</p>
           <div id="views-list"></div>
-          <button id="add-view" class="btn small">＋ 新增視圖</button>
+          <button id="add-view" class="btn small" data-i18n="bld.addView">＋ 新增視圖</button>
         </li>
 
         <li>
-          <h3>③ 物種／分類資料</h3>
-          <label class="fld">分類 CSV <input id="f-taxa" type="file" accept=".csv" /></label>
+          <h3 data-i18n="bld.s3">③ 物種／分類資料</h3>
+          <label class="fld"><span data-i18n="bld.fTaxa">分類 CSV</span> <input id="f-taxa" type="file" accept=".csv" /></label>
           <div id="taxa-map" hidden>
             <div class="grid2">
-              <label class="fld">species_id 欄 <select id="m-id"></select></label>
-              <label class="fld">顯示名稱欄 <select id="m-label"></select></label>
+              <label class="fld"><span data-i18n="bld.mId">species_id 欄</span> <select id="m-id"></select></label>
+              <label class="fld"><span data-i18n="bld.mLabel">顯示名稱欄</span> <select id="m-label"></select></label>
             </div>
             <div class="grid2">
-              <label class="fld">分組欄（著色／形狀）<select id="m-group"></select></label>
-              <label class="fld">圖片欄（可選）<select id="m-image"></select></label>
+              <label class="fld"><span data-i18n="bld.mGroup">分組欄（著色／形狀）</span><select id="m-group"></select></label>
+              <label class="fld"><span data-i18n="bld.mImage">圖片欄（可選）</span><select id="m-image"></select></label>
             </div>
-            <label class="fld">資訊視窗顯示欄位（可複選）</label>
+            <label class="fld" data-i18n="bld.mInfo">資訊視窗顯示欄位（可複選）</label>
             <div id="m-info" class="chips-pick"></div>
           </div>
         </li>
 
         <li>
-          <h3>④ 親緣樹（可選）</h3>
-          <label class="fld">Newick 樹檔 <input id="f-tree" type="file" accept=".nwk,.tre,.newick,.txt" /></label>
-          <p class="dim small">樹的 tip 標籤需與 species_id 一致。無樹時只顯示 PCA。</p>
+          <h3 data-i18n="bld.s4">④ 親緣樹（可選）</h3>
+          <label class="fld"><span data-i18n="bld.fTree">Newick 樹檔</span> <input id="f-tree" type="file" accept=".nwk,.tre,.newick,.txt" /></label>
+          <p class="dim small" data-i18n="bld.s4hint">樹的 tip 標籤需與 species_id 一致。無樹時只顯示 PCA。</p>
         </li>
       </ol>
 
       <div class="builder-actions">
-        <button id="btn-preview" class="btn primary">建立預覽 ▶</button>
-        <button id="btn-zip" class="btn" disabled>下載統一 Zip</button>
-        <button id="btn-package" class="btn" disabled>打包成 GitHub Pages 網站 ⬇</button>
+        <button id="btn-preview" class="btn primary" data-i18n="bld.preview">建立預覽 ▶</button>
+        <button id="btn-zip" class="btn" disabled data-i18n="bld.dlZip">下載統一 Zip</button>
+        <button id="btn-package" class="btn" disabled data-i18n="bld.package">打包成 GitHub Pages 網站 ⬇</button>
       </div>
       <div id="build-msg" class="build-msg"></div>
     </aside>
@@ -91,19 +118,19 @@
     <main class="builder-preview">
       <div id="preview-empty" class="preview-empty">
         <div>
-          <p class="big">👀 即時預覽會出現在這裡</p>
-          <p class="dim">填好左側、按「建立預覽」。所有處理都在你的瀏覽器內完成，資料不會上傳到任何伺服器。</p>
+          <p class="big" data-i18n="bld.emptyTitle">👀 即時預覽會出現在這裡</p>
+          <p class="dim" data-i18n="bld.emptyBody">填好左側、按「建立預覽」。所有處理都在你的瀏覽器內完成，資料不會上傳到任何伺服器。</p>
         </div>
       </div>
       <div id="dashboard" class="dashboard" hidden>
         <div class="pca-row" id="pca-row"></div>
         <section class="panel legend-bar">
           <div class="legend-left">
-            <label class="group-field-lbl">分組依 <select id="group-field" class="axis-select"></select></label>
+            <label class="group-field-lbl"><span data-i18n="group.by">分組依</span> <select id="group-field" class="axis-select"></select></label>
             <ul id="legend" class="legend-chips"></ul>
-            <button id="group-settings-btn" class="btn small" title="自訂各分類的顏色與形狀">⚙ 顏色/形狀</button>
+            <button id="group-settings-btn" class="btn small" title="自訂各分類的顏色與形狀">⚙ <span data-i18n="group.settings">顏色/形狀</span></button>
             <div id="group-settings" class="group-settings" hidden>
-              <div class="gs-head"><span>自訂顏色與形狀</span><button class="btn small gs-reset">重設為預設</button></div>
+              <div class="gs-head"><span data-i18n="group.customTitle">自訂顏色與形狀</span><button class="btn small gs-reset" data-i18n="group.reset">重設為預設</button></div>
               <div class="gs-list"></div>
             </div>
           </div>
@@ -111,20 +138,20 @@
         </section>
         <section class="panel tree-panel">
           <div class="panel-head">
-            <h2>親緣關係樹 <span class="dim small">（點分支高亮整個 clade）</span></h2>
+            <h2><span data-i18n="tree.title">親緣關係樹</span> <span class="dim small" data-i18n="tree.sub">（點分支高亮整個 clade）</span></h2>
             <div class="axis-ctrls">
               <div class="seg" id="tree-mode" role="group">
-                <button class="seg-btn active" data-mode="clado">整齊對齊</button>
-                <button class="seg-btn" data-mode="phylo">分支長度</button>
+                <button class="seg-btn active" data-mode="clado" data-i18n="tree.clado">整齊對齊</button>
+                <button class="seg-btn" data-mode="phylo" data-i18n="tree.phylo">分支長度</button>
               </div>
-              <button class="btn small expand-tree">展開全部</button>
-              <button class="btn small fit-tree">⤢ 自動縮放</button>
-              <button class="btn small dl-tree">↓ PNG</button>
+              <button class="btn small expand-tree" data-i18n="tree.expandAll">展開全部</button>
+              <button class="btn small fit-tree">⤢ <span data-i18n="tree.fit">自動縮放</span></button>
+              <button class="btn small dl-tree">↓ <span data-i18n="tree.png">PNG</span></button>
             </div>
           </div>
           <div class="tree-host"><div id="tree-view" class="tree"></div></div>
           <div id="tree-fallback" class="tree-fallback" hidden>
-            <p>⚠️ 此環境無法使用 WebGL，無法繪製互動式親緣樹。</p>
+            <p data-i18n="tree.fallback1">⚠️ 此環境無法使用 WebGL，無法繪製互動式親緣樹。</p>
           </div>
         </section>
       </div>
@@ -135,7 +162,7 @@
   <div id="info-card" class="info-card" hidden></div>
   <!-- 點擊釘選的側邊常駐面板 -->
   <aside id="side-panel" class="side-panel" hidden>
-    <div class="side-panel-head"><span>物種資訊</span><button id="side-panel-close" class="modal-close" aria-label="關閉">×</button></div>
+    <div class="side-panel-head"><span data-i18n="side.title">物種資訊</span><button id="side-panel-close" class="modal-close" aria-label="關閉">×</button></div>
     <div id="side-panel-body"></div>
   </aside>
 
@@ -144,28 +171,29 @@
     <div class="modal-backdrop" data-close-tut></div>
     <div class="modal-card wide" role="dialog" aria-modal="true">
       <button class="modal-close" data-close-tut aria-label="關閉">×</button>
-      <h2>✅ 打包完成！接著把它變成你的網頁</h2>
-      <p>下載的 <code id="tut-filename">my-pca-dashboard.zip</code> 就是一個完整的無伺服器網站。三步驟上線：</p>
+      <h2 data-i18n="tut.title">✅ 打包完成！接著把它變成你的網頁</h2>
+      <p><span data-i18n="tut.lead1">下載的</span> <code id="tut-filename">my-pca-dashboard.zip</code> <span data-i18n="tut.lead2">就是一個完整的無伺服器網站。三步驟上線：</span></p>
       <ol class="tut-steps">
-        <li><strong>建立 GitHub repo</strong>：到 GitHub 按 New repository，取個名字（例如 <code>my-pca</code>），建立。</li>
-        <li><strong>上傳檔案</strong>：解壓下載的 zip，把裡面<strong>所有檔案與資料夾</strong>（<code>index.html</code>、<code>css/</code>、<code>js/</code>、<code>vendor/</code>、<code>data/</code>、<code>.nojekyll</code>）拖到 repo 的「Add file → Upload files」，Commit。</li>
-        <li><strong>啟用 Pages</strong>：repo → <strong>Settings → Pages</strong> → Source 選 <em>Deploy from a branch</em> → Branch 選 <code>main</code>、Folder 選 <code>/(root)</code> → Save。約 1–2 分鐘後，你的互動式 PCA 網頁就在
-          <code>https://&lt;帳號&gt;.github.io/&lt;repo&gt;/</code> 上線了。</li>
+        <li data-i18n="tut.step1"><strong>建立 GitHub repo</strong>：到 GitHub 按 New repository，取個名字（例如 my-pca），建立。</li>
+        <li data-i18n="tut.step2"><strong>上傳檔案</strong>：解壓下載的 zip，把裡面所有檔案與資料夾（index.html、css/、js/、vendor/、data/、.nojekyll）拖到 repo 的「Add file → Upload files」，Commit。</li>
+        <li data-i18n="tut.step3"><strong>啟用 Pages</strong>：repo → Settings → Pages → Source 選 Deploy from a branch → Branch 選 main、Folder 選 /(root) → Save。約 1–2 分鐘後你的網頁就上線了。</li>
       </ol>
-      <p class="dim small">整個網站純靜態、無伺服器、可離線開啟；資料已內嵌，觀看者不需再上傳。日後要換資料，回到本精靈重新打包即可。</p>
-      <div class="tut-actions"><button class="btn primary" data-close-tut>我知道了</button></div>
+      <p class="dim small" data-i18n="tut.note">整個網站純靜態、無伺服器、可離線開啟；資料已內嵌，觀看者不需再上傳。日後要換資料，回到本精靈重新打包即可。</p>
+      <div class="tut-actions"><button class="btn primary" data-close-tut data-i18n="tut.ok">我知道了</button></div>
     </div>
   </div>
 
-  <script src="js/state.js"></script>
-  <script src="js/zip-loader.js"></script>
-  <script src="js/unified-build.js"></script>
-  <script src="js/groups.js"></script>
-  <script src="js/legend.js"></script>
-  <script src="js/pca-view.js"></script>
-  <script src="js/tree-view.js"></script>
-  <script src="js/info-panel.js"></script>
-  <script src="js/search.js"></script>
-  <script src="js/builder.js"></script>
+  <script src="js/state.js?v=14"></script>
+  <script src="js/i18n.js?v=14"></script>
+  <script src="js/zip-loader.js?v=14"></script>
+  <script src="js/unified-build.js?v=14"></script>
+  <script src="js/groups.js?v=14"></script>
+  <script src="js/legend.js?v=14"></script>
+  <script src="js/pca-view.js?v=14"></script>
+  <script src="js/tree-view.js?v=14"></script>
+  <script src="js/info-panel.js?v=14"></script>
+  <script src="js/search.js?v=14"></script>
+  <script src="js/theme.js?v=14"></script>
+  <script src="js/builder.js?v=14"></script>
 </body>
 </html>
