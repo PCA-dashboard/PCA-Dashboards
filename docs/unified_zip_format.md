@@ -1,6 +1,6 @@
 # 統一 Zip 格式規格（v1.0）
 
-Dashboard 與三個匯出器（R / Python / CSV）之間的**唯一契約**。所有統計都在匯出端
+Dashboard 與所有匯出器（建立精靈 / R / Python / CSV）之間的**唯一契約**。所有統計都在匯出端
 算好；Dashboard 只讀結果作圖，**瀏覽器端不做任何統計運算**。
 
 ## 目錄結構
@@ -79,3 +79,73 @@ images/<file>                 物種圖片（可選；缺圖時 Dashboard 用佔
 python3 exporters/common/unified_zip.py validate <zip>
 ```
 檢查格式、必填欄位、與三方 join key 一致性。
+
+---
+
+## 怎麼產生統一 Zip
+
+有四條路，產出的 Zip 完全等價，Dashboard 一律無差別讀取。
+
+| 路徑 | 適合誰 | 需要什麼 |
+|------|--------|----------|
+| **建立精靈**（瀏覽器） | 手上已經是 CSV | 什麼都不用裝，開網頁就能用 |
+| **通用 R 匯出器** | 在 R 裡跑完 PCA | 只要 base R（傳 `phylo` 物件才需要 ape） |
+| **通用 Python 匯出器** | 在 Python 裡跑完 PCA | 只要標準函式庫（numpy/pandas/sklearn 可選） |
+| **CSV 匯出器**（命令列） | 要腳本化、可重跑 | Python 3 |
+
+> 瀏覽器裡**不可能**跑 R 或 Python——本站是純靜態、無伺服器的。所以建立精靈只吃
+> 「已經算好的分數 CSV」；還在 R/Python 裡的資料請用下面的通用匯出器直接產 Zip。
+
+### 建立精靈（瀏覽器，零安裝）
+開 `builder.html`：上傳分數 CSV → 分類 CSV →（可選）Newick 樹 → 建立預覽 →
+下載統一 Zip，或直接打包成一個可放 GitHub Pages 的完整網站。全程在你的瀏覽器內完成，
+資料不會上傳到任何伺服器。
+
+### 通用 R 匯出器
+`exporters/r/unified_zip.R`。`scores` 吃 `prcomp` / `gm.prcomp` / matrix / data.frame；
+沒傳 `variance` 時自動取 `sdev^2`（`gm.prcomp` 取 `$d`）。
+
+```r
+source("exporters/r/unified_zip.R")
+pca <- prcomp(my_matrix)                  # 或 geomorph::gm.prcomp(...)
+write_unified_zip(
+  out       = "build/my.zip",
+  views     = list(list(id = "shape", label = "Body shape PCA", scores = pca)),
+  taxa      = my_taxa_df,                 # 含 species_id 欄的 data.frame
+  group_col = "family",
+  tree      = my_phylo,                   # phylo 物件／Newick 字串／.nwk 路徑，可省略
+  dataset   = list(title = "My PCA")
+)
+```
+
+### 通用 Python 匯出器
+`exporters/python/export_generic.py`。`scores` 吃 DataFrame / ndarray / dict /
+list-of-rows；`variance` 可直接傳 fitted 的 sklearn `PCA`。
+
+```python
+from export_generic import write_unified_zip
+write_unified_zip("my.zip",
+    views=[{"id": "shape", "label": "Body shape PCA",
+            "scores": df_scores,       # index=species_id 的 DataFrame
+            "variance": pca}],         # fitted sklearn PCA，或比例序列
+    taxa=df_taxa, group_col="family", tree="tree.nwk",
+    dataset={"title": "My PCA"})
+```
+
+傳 fitted PCA 時取的是 `explained_variance_ratio_`，且**不會重新正規化**：只保留前
+k 個成分時總和本來就小於 1，硬拉成 1 會把「解釋了多少變異」灌水。傳特徵值
+（總和大於 1）才會轉換成比例。
+
+### 多個形態空間
+`views` 給多筆就會有多張連動的 PCA 圖（例如耳石的側視＋背視、扇貝的左瓣＋右瓣）。
+各視圖的 `species_id` 都必須落在 `taxa` 內。
+
+## 常見地雷
+
+- **`species_id` 三方要一致**：scores、taxa、樹的 tip 標籤必須是同一組字串。
+  這是最常見的失敗原因，驗證器會直接指出是哪幾筆對不上。
+- **R 的 `write.csv` 會多一個空表頭**：row names 那欄的標題是空字串。建立精靈認得
+  這種格式（會顯示成「第 1 欄，無標題」），但自己寫程式處理時要留意。
+- **`doi` / `citation` / `source_url` 是選填**：沒有 DOI 的資料集（未發表、自己的
+  分析）留空即可，鍵存在就好。
+- **PC 數量**：`scores.csv` 放前 N 個 PC 就好（軸切換用）；完整 scree 放 `variance.csv`。

@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="zh-Hant" data-theme="dark" data-accent="lime">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>統一 Zip 格式與匯出器 — PCA Dashboard</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='11' cy='15' r='7' fill='%230072B2'/%3E%3Crect x='17' y='9' width='12' height='12' fill='%23E69F00'/%3E%3C/svg%3E" />
+  <script>
+    (function(){try{var r=document.documentElement,p=localStorage.getItem('mp-themepref')||'auto',
+      a=localStorage.getItem('mp-accent')||'lime',
+      d=p==='auto'?(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'):p;
+      r.setAttribute('data-theme',d);r.setAttribute('data-accent',a);}catch(e){}})();
+  </script>
+  <link rel="stylesheet" href="css/style.css?v=16" />
+</head>
+<body>
+<div class="app-shell">
+  <header class="topbar">
+    <div class="title">
+      <h1 data-i18n="doc.title">統一 Zip 格式與匯出器</h1>
+      <p class="subtitle" data-i18n="doc.subtitle">Dashboard 與各匯出器之間的唯一契約</p>
+    </div>
+    <div class="topbar-actions">
+      <a class="btn" href="index.html" data-i18n="doc.toViewer">← 回檢視器</a>
+      <a class="btn" href="builder.html" data-i18n="doc.toBuilder">建立精靈</a>
+      <a class="btn" href="unified_zip_format.md" download data-i18n="doc.raw">↓ 原始 .md</a>
+      <div class="settings-wrap">
+        <button id="settings-tile" class="tile" data-i18n-title="set.title" title="設定" aria-label="設定">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg>
+        </button>
+        <div class="settings-menu" id="settings-menu" hidden>
+          <h4 data-i18n="set.title">設定</h4>
+          <div class="set-lbl" data-i18n="set.lang">語言 / Language</div>
+          <div class="set-row" id="set-lang">
+            <div class="set-opt" data-lang="zh">中文</div>
+            <div class="set-opt" data-lang="en">EN</div>
+          </div>
+          <div class="set-lbl" data-i18n="set.theme">主題 / Theme</div>
+          <div class="set-row" id="set-theme">
+            <div class="set-opt" data-themepref="light" data-i18n="set.light">淺色</div>
+            <div class="set-opt" data-themepref="dark" data-i18n="set.dark">深色</div>
+            <div class="set-opt" data-themepref="auto" data-i18n="set.auto">自動</div>
+          </div>
+          <div class="set-lbl" data-i18n="set.accent">主視覺色 / Accent</div>
+          <div class="accent-row" id="set-accent">
+            <div class="accent-dot" data-accent="lime"   style="background:#d4fb3c;color:#d4fb3c"></div>
+            <div class="accent-dot" data-accent="cyan"   style="background:#3fc0e0;color:#3fc0e0"></div>
+            <div class="accent-dot" data-accent="violet" style="background:#a98bff;color:#a98bff"></div>
+            <div class="accent-dot" data-accent="amber"  style="background:#f4b53a;color:#f4b53a"></div>
+            <div class="accent-dot" data-accent="coral"  style="background:#ff8a66;color:#ff8a66"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="doc-wrap">
+    <!-- 目錄由 format.js 依實際標題產生 -->
+    <nav class="doc-toc" id="doc-toc" aria-label="目錄"></nav>
+    <article class="panel doc-body" id="doc-body">
+      <p class="dim" data-i18n="doc.loading">載入說明文件中…</p>
+    </article>
+  </main>
+</div>
+
+<script src="js/i18n.js?v=16"></script>
+<script src="js/markdown.js?v=16"></script>
+<script src="js/theme.js?v=16"></script>
+<script>
+  /* 用站台樣式呈現 unified_zip_format.md。文件本身維持單一來源（那份 .md），
+     這裡只負責取回來、渲染、生目錄。 */
+  (function () {
+    var FD = window.FrogDash || {};
+    var body = document.getElementById("doc-body");
+    var toc = document.getElementById("doc-toc");
+
+    function slug(s, i) {
+      return "sec-" + i + "-" + String(s).toLowerCase().replace(/[^\w一-鿿]+/g, "-").replace(/^-+|-+$/g, "");
+    }
+
+    fetch("unified_zip_format.md")
+      .then(function (r) {
+        if (!r.ok) throw new Error("HTTP " + r.status);
+        return r.text();
+      })
+      .then(function (md) {
+        body.innerHTML = FD.renderMarkdown(md);
+        // 目錄：只收 h2，加上錨點
+        var hs = body.querySelectorAll("h2");
+        if (!hs.length) { toc.hidden = true; return; }
+        var html = '<div class="doc-toc-t">' + ((FD.t && FD.t("doc.toc")) || "目錄") + "</div>";
+        hs.forEach(function (h, i) {
+          var id = slug(h.textContent, i);
+          h.id = id;
+          html += '<a href="#' + id + '">' + h.textContent + "</a>";
+        });
+        toc.innerHTML = html;
+      })
+      .catch(function (e) {
+        console.error(e);
+        body.innerHTML = '<p class="dim">' +
+          ((FD.t && FD.t("doc.failed")) || "載入說明文件失敗") + "：" + e.message +
+          ' — <a href="unified_zip_format.md">' +
+          ((FD.t && FD.t("doc.raw")) || "直接看原始 .md") + "</a></p>";
+      });
+  })();
+</script>
+</body>
+</html>

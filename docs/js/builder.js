@@ -8,7 +8,9 @@
   // 打包時要抓進成品的檢視器檔案（同源，Pages/http 皆可 fetch）。
   // 只列出「進入點」；其餘 css/js/vendor 由 collectAppFiles() 直接從 HTML 掃出來，
   // 避免日後新增模組時忘了加進清單，打包出 404 的壞站。
-  var ENTRY_PAGES = ["index.html", "builder.html"];
+  // format.html 是用 <a> 連過去的（不是 script/link），不會被自動掃到，所以列為進入點；
+  // 它的 markdown.js 等相依就會跟著被收進來。
+  var ENTRY_PAGES = ["index.html", "builder.html", "format.html"];
   // 非必要、但帶著更完整的檔案（缺了不算失敗）：讓打包出的站也能看格式說明
   var EXTRA_FILES = ["unified_zip_format.md"];
 
