@@ -19,8 +19,9 @@ images/<file>                 物種圖片（可選；缺圖時 Dashboard 用佔
 {
   "schema_version": "1.0",                 // 格式契約版本（Dashboard 會檢查）
   "dataset": {
-    "title", "doi", "citation", "source_url",
-    "created_with": "R | Python | CSV",
+    "title",                                 // 必填
+    "doi", "citation", "source_url",         // 選填（鍵要在，值可為空字串）
+    "created_with": "R | Python | CSV | Builder",
     "generator_version", "generated_at"
   },
   "id_policy": {                           // join key 政策

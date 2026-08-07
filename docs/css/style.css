@@ -606,6 +606,11 @@ body.has-side-panel { padding-right: 340px; }
 .pe-step .n { flex: none; width: 21px; height: 21px; border-radius: 50%; display: grid; place-items: center;
   background: var(--accent); color: var(--on-accent); font-size: 11px; font-weight: 800; }
 .pe-step .t { font-size: 12px; color: var(--ink-soft); line-height: 1.55; }
+.pe-note { text-align: left; font-size: 11.5px; line-height: 1.7; color: var(--dim);
+  background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-sm);
+  padding: 11px 13px; margin-bottom: 12px; }
+.pe-note code { font-family: var(--mono); font-size: 11px; background: var(--panel-3); padding: 1px 4px; border-radius: 4px; }
+.pe-note a { display: inline-block; margin-top: 5px; font-weight: 700; }
 .pe-shape { text-align: left; background: var(--panel-3); border: 1px solid var(--line);
   border-radius: var(--radius-sm); padding: 12px 14px; overflow-x: auto; }
 .pe-shape .cap { font-size: 11px; color: var(--dim); margin-bottom: 7px; }

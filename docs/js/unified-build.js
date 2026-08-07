@@ -156,7 +156,7 @@
         doi: inputs.dataset.doi || "",
         citation: inputs.dataset.citation || "",
         source_url: inputs.dataset.source_url || "",
-        created_with: "CSV",
+        created_with: "Builder",   // 由瀏覽器建立精靈產生（有別於 R / Python / CSV 匯出器）
         generator_version: "0.3.0",
         generated_at: new Date().toISOString().replace(/\.\d+Z$/, "Z")
       },
