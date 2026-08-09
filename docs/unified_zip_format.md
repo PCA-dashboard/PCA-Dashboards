@@ -89,8 +89,8 @@ python3 exporters/common/unified_zip.py validate <zip>
 | 路徑 | 適合誰 | 需要什麼 |
 |------|--------|----------|
 | **建立精靈**（瀏覽器） | 手上已經是 CSV | 什麼都不用裝，開網頁就能用 |
-| **通用 R 匯出器** | 在 R 裡跑完 PCA | 只要 base R（傳 `phylo` 物件才需要 ape） |
-| **通用 Python 匯出器** | 在 Python 裡跑完 PCA | 只要標準函式庫（numpy/pandas/sklearn 可選） |
+| **通用 R 匯出器** | 在 R 裡跑完 PCA | 只要 base R（傳 `phylo` 物件才需要 ape）· [↓ 下載](exporters/unified_zip.R) |
+| **通用 Python 匯出器** | 在 Python 裡跑完 PCA | 只要標準函式庫（numpy/pandas/sklearn 可選）· [↓ 下載](exporters/export_generic.py) |
 | **CSV 匯出器**（命令列） | 要腳本化、可重跑 | Python 3 |
 
 > 瀏覽器裡**不可能**跑 R 或 Python——本站是純靜態、無伺服器的。所以建立精靈只吃
@@ -102,11 +102,15 @@ python3 exporters/common/unified_zip.py validate <zip>
 資料不會上傳到任何伺服器。
 
 ### 通用 R 匯出器
-`exporters/r/unified_zip.R`。`scores` 吃 `prcomp` / `gm.prcomp` / matrix / data.frame；
-沒傳 `variance` 時自動取 `sdev^2`（`gm.prcomp` 取 `$d`）。
+
+**[↓ 下載 unified_zip.R](exporters/unified_zip.R)** — 單一檔案、只用 base R，
+放進專案 `source()` 就能用（傳 `phylo` 物件才需要 ape）。
+
+`scores` 吃 `prcomp` / `gm.prcomp` / matrix / data.frame；沒傳 `variance` 時自動取
+`sdev^2`（`gm.prcomp` 取 `$d`）。
 
 ```r
-source("exporters/r/unified_zip.R")
+source("unified_zip.R")   # 下載後放在手邊即可
 pca <- prcomp(my_matrix)                  # 或 geomorph::gm.prcomp(...)
 write_unified_zip(
   out       = "build/my.zip",
@@ -119,8 +123,12 @@ write_unified_zip(
 ```
 
 ### 通用 Python 匯出器
-`exporters/python/export_generic.py`。`scores` 吃 DataFrame / ndarray / dict /
-list-of-rows；`variance` 可直接傳 fitted 的 sklearn `PCA`。
+
+**[↓ 下載 export_generic.py](exporters/export_generic.py)** — 單一檔案、零相依，
+下載這一個 `.py` 就能用（numpy / pandas / sklearn 有裝就自動支援，沒裝也能跑）。
+
+`scores` 吃 DataFrame / ndarray / dict / list-of-rows；`variance` 可直接傳 fitted 的
+sklearn `PCA`。
 
 ```python
 from export_generic import write_unified_zip

@@ -656,6 +656,16 @@ body.has-side-panel { padding-right: 340px; }
   color: var(--ink-soft); font-size: 13px; }
 .doc-body blockquote code { background: var(--panel-3); }
 .doc-body hr { border: none; border-top: 1px solid var(--line); margin: 28px 0; }
+/* 下載連結（.R / .py 等檔案）做成可點的膠囊，比純文字連結顯眼 */
+.doc-body a[download] {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 12px; border-radius: 999px; font-weight: 700; font-size: 12.5px;
+  background: var(--accent-soft); color: var(--accent-hi);
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
+}
+.doc-body a[download]:hover { background: var(--accent); color: var(--on-accent); border-color: transparent; }
+.doc-table a[download] { white-space: nowrap; }
+
 .doc-table-wrap { overflow-x: auto; margin: 14px 0; }
 .doc-table { border-collapse: collapse; width: 100%; font-size: 12.5px; }
 .doc-table th, .doc-table td { border: 1px solid var(--line); padding: 8px 11px; text-align: left; vertical-align: top; }
