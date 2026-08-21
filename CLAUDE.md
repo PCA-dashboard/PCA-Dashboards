@@ -21,7 +21,7 @@
 
 ## 技術風格
 - Vanilla JS,IIFE 模組掛在 `window.FrogDash`(別名 `FD`),**無 build step**。
-- 快取破壞:所有 `<script>`/`<link>` 用 `?v=N`,改版時整批 +1(目前 **v=21**)。
+- 快取破壞:所有 `<script>`/`<link>` 用 `?v=N`,改版時整批 +1(目前 **v=22**)。
 - 主題系統:`<html data-theme=dark|light data-accent=lime|cyan|violet|amber|coral>`,localStorage 記憶,head 內有 inline script 防閃爍。
 - i18n:`data-i18n` / `-ph` / `-title` 屬性 + `FD.t(key,params)`;字典在 `docs/js/i18n.js`。
   說明文件頁 `format.html` 的**正文**不走字典,而是依 `<html data-lang>` 抓 `unified_zip_format.md`(中)或 `unified_zip_format.en.md`(英);改一份就要同步另一份,章節結構必須一致。
@@ -54,6 +54,7 @@
 ## 關鍵檔案地圖(`docs/`)
 - `index.html` 檢視器 · `builder.html` 建立精靈(讓別人上傳自己的 PCA 打包成站)
 - `css/style.css` 全站樣式(含主題 token、RWD)
+- PCA 圖的拖曳只有一個,平移與框選分時共用:預設 `dragmode='pan'`,面板上的「框選」鈕切成 `select`(此時 Shift＝Plotly 原生加選),沒開框選時按住 Shift 拖曳＝臨時框選。回平移時**必須**把 `_fullLayout.selections` 清空,否則殘留的選取框會把拖曳吃掉去搬動它,平移完全沒反應。
 - `js/`:`app.js`(主流程)、`state.js`、`zip-loader.js`、`remote-image.js`、`gbif-image.js`、`i18n.js`、`theme.js`、`overview.js`、`pca-view.js`、`tree-view.js`、`info-panel.js`、`legend.js`、`groups.js`、`search.js`
 - `data/catalog.json` 案例清單 · `data/*.zip` 各案例資料 · `data/img/**` 鏡像散檔 · `data/foram_obj_images.json` Zenodo offset index
 

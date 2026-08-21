@@ -182,6 +182,10 @@ select option, select optgroup { background: var(--panel); color: var(--ink); }
 .btn.primary { background: var(--accent); color: var(--accent-ink); border-color: transparent; font-weight: 800; }
 .btn.primary:hover { background: var(--accent-hi); color: var(--accent-ink); }
 .btn.small { padding: 6px 11px; font-size: 12px; border-radius: 9px; }
+/* 切換型小按鈕（例：PCA 的「框選」）：按下去要看得出來是持續開啟的狀態 */
+.btn.small.sel-mode { display: inline-flex; align-items: center; gap: 5px; }
+.btn.active { background: var(--accent); border-color: transparent; color: var(--accent-ink); font-weight: 700; }
+.btn.active:hover { background: var(--accent-hi); color: var(--accent-ink); }
 .file-btn { position: relative; }
 
 /* ---- 搜尋欄：聚焦展開 + 漸層流光 + gooey 粒子 + 點擊漣漪/爆散 + 動畫建議清單（vanilla）---- */
@@ -436,7 +440,10 @@ select option, select optgroup { background: var(--panel); color: var(--ink); }
 .swatch { flex: none; }
 .group-field-lbl { font-size: 12px; color: var(--dim); display: inline-flex; align-items: center; gap: 5px; }
 
-.dataset-meta { font-size: 12px; color: var(--dim); text-align: right; max-width: 46%; }
+/* 資料來源永遠獨佔一整列並置中。以前是 max-width:46% + text-align:right 的 flex 項目，
+   圖例一多就被擠到換行，變成「靠左的框裡靠右對齊」，看起來像沒對齊任何東西。 */
+.dataset-meta { flex: 1 0 100%; max-width: 100%; text-align: center; margin-top: 4px;
+                font-size: 12px; color: var(--dim); }
 .dataset-meta .row { margin: 1px 0; }
 .dataset-meta a { color: var(--accent); }
 .dataset-meta .cite { display: block; margin-top: 3px; font-size: 11px; opacity: .85; }
@@ -708,7 +715,6 @@ body.has-side-panel { padding-right: 340px; }
   .hero-inner { grid-template-columns: 1fr; }
   .hero-insight { width: 100%; }
   .hero-title { font-size: 34px; }
-  .dataset-meta { max-width: 100%; text-align: left; }
   .recent-grid { grid-template-columns: 1fr; }
 }
 
