@@ -11,7 +11,7 @@
       d=p==='auto'?(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'):p;
       r.setAttribute('data-theme',d);r.setAttribute('data-accent',a);}catch(e){}})();
   </script>
-  <link rel="stylesheet" href="css/style.css?v=18" />
+  <link rel="stylesheet" href="css/style.css?v=19" />
   <script src="vendor/jszip/jszip-3.10.1.min.js"></script>
   <script src="vendor/plotly/plotly-2.35.2.min.js"></script>
   <script src="vendor/phylocanvas/phylocanvas.gl-1.64.0.bundle.js"></script>
@@ -124,8 +124,14 @@
 
       <div class="builder-actions">
         <button id="btn-preview" class="btn primary" data-i18n="bld.preview">建立預覽 ▶</button>
-        <button id="btn-zip" class="btn" disabled data-i18n="bld.dlZip">下載統一 Zip</button>
-        <button id="btn-package" class="btn" disabled data-i18n="bld.package">打包成 GitHub Pages 網站 ⬇</button>
+        <div class="action-item">
+          <button id="btn-zip" class="btn" disabled data-i18n="bld.dlZip">↓ 只下載資料（統一 Zip）</button>
+          <span class="action-sub" data-i18n="bld.dlZipSub">只有你的資料，幾 KB。給檢視器讀，或存檔／分享。</span>
+        </div>
+        <div class="action-item">
+          <button id="btn-package" class="btn" disabled data-i18n="bld.package">⬇ 打包成完整網站</button>
+          <span class="action-sub" data-i18n="bld.packageSub">資料＋整個檢視器，約 2 MB。解壓上傳 GitHub 就能上線。</span>
+        </div>
       </div>
       <p id="builder-hint" class="builder-hint" data-i18n="bld.hintPreviewFirst">先按「建立預覽」，下載與打包才會開啟</p>
       <div id="build-msg" class="build-msg"></div>
@@ -227,17 +233,17 @@ Genus_A_sp2,2.017,-0.884,0.341</code>
     </div>
   </div>
 
-  <script src="js/state.js?v=18"></script>
-  <script src="js/i18n.js?v=18"></script>
-  <script src="js/zip-loader.js?v=18"></script>
-  <script src="js/unified-build.js?v=18"></script>
-  <script src="js/groups.js?v=18"></script>
-  <script src="js/legend.js?v=18"></script>
-  <script src="js/pca-view.js?v=18"></script>
-  <script src="js/tree-view.js?v=18"></script>
-  <script src="js/info-panel.js?v=18"></script>
-  <script src="js/search.js?v=18"></script>
-  <script src="js/theme.js?v=18"></script>
-  <script src="js/builder.js?v=18"></script>
+  <script src="js/state.js?v=19"></script>
+  <script src="js/i18n.js?v=19"></script>
+  <script src="js/zip-loader.js?v=19"></script>
+  <script src="js/unified-build.js?v=19"></script>
+  <script src="js/groups.js?v=19"></script>
+  <script src="js/legend.js?v=19"></script>
+  <script src="js/pca-view.js?v=19"></script>
+  <script src="js/tree-view.js?v=19"></script>
+  <script src="js/info-panel.js?v=19"></script>
+  <script src="js/search.js?v=19"></script>
+  <script src="js/theme.js?v=19"></script>
+  <script src="js/builder.js?v=19"></script>
 </body>
 </html>

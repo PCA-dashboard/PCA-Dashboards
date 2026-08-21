@@ -35,6 +35,9 @@
 
 /* ===== 主題 token（深/淺）：由 <html data-theme> 切換 ===== */
 [data-theme="dark"] {
+  color-scheme: dark;          /* 原生控制項（select 彈出層、捲軸）跟著深色 */
+  --ok:#6fe3b6; --err:#ff9c9c; --warn:#e7d27a;   /* 語意色：深底用亮色 */
+  --status-err-bg:#2a1414; --status-err-bd:#4a2020;
   --page:#a9a99a; --app:#0d0e0a; --surface:#15160f; --surface-2:#141510;
   --sunken:#101109; --sunken-2:#0c0d08; --chip:#1c1d15;
   --text:#f3f4ee; --text-2:#e2e3d9; --text-3:#c9cbbe; --muted:#8f9184;
@@ -47,6 +50,9 @@
   --hover-fg:#f3f4ee; --plot-line:#33404d; --scrollthumb:#2a2c22;
 }
 [data-theme="light"] {
+  color-scheme: light;         /* 同上，淺色 */
+  --ok:#0a7a53; --err:#c02626; --warn:#7a5d10;   /* 淺底要壓深，否則對比不足 */
+  --status-err-bg:#fdecec; --status-err-bd:#f0b8b8;
   --page:#c9c8c3; --app:#f5f4f2; --surface:#ffffff; --surface-2:#eceae7;
   --sunken:#f2f0ed; --sunken-2:#eae8e4; --chip:#e7e5e1;
   --text:#1c1a18; --text-2:#33302b; --text-3:#4a473f; --muted:#70726a;
@@ -161,7 +167,9 @@ a:hover { color: var(--accent-hi); }
   font-size: 13px; padding: 8px 10px; border: 1px solid var(--line-strong); border-radius: 10px;
   background: var(--panel-2); color: var(--ink); font-weight: 600; font-family: inherit;
 }
-select option { background: #15160f; color: var(--ink); }
+/* option 的底色必須跟著主題走。這裡原本寫死深色主題的 #15160f，淺色主題下就變成
+   黑底配近黑字，整個下拉選單看不見（只有反白那列看得到）。*/
+select option, select optgroup { background: var(--panel); color: var(--ink); }
 
 .btn {
   display: inline-flex; align-items: center; gap: 6px; cursor: pointer;
@@ -269,9 +277,9 @@ select option { background: #15160f; color: var(--ink); }
 
 /* ---- status ---- */
 .status { padding: 10px 22px; font-size: 13px; border-bottom: 1px solid var(--line); background: var(--panel-2); color: var(--ink-soft); }
-.status.error { background: #2a1414; color: #ff9c9c; border-bottom-color: #4a2020; }
+.status.error { background: var(--status-err-bg); color: var(--err); border-bottom-color: var(--status-err-bd); }
 .status.loading { background: var(--accent-soft); color: var(--accent-hi); }
-.status.success { background: rgba(0,158,115,.14); color: #6fe3b6; }
+.status.success { background: rgba(0,158,115,.14); color: var(--ok); }
 
 /* ---- welcome ---- */
 .welcome { flex: 1; display: grid; place-items: center; padding: 48px 20px; }
@@ -281,7 +289,7 @@ select option { background: #15160f; color: var(--ink); }
   border-radius: 24px; box-shadow: var(--shadow); padding: 44px 40px; text-align: center;
 }
 .welcome-card h2 { margin: 6px 0 0; font-size: 26px; font-weight: 700; }
-.welcome-card p { color: #a4a699; margin: 12px 0 0; line-height: 1.6; }
+.welcome-card p { color: var(--ink-soft); margin: 12px 0 0; line-height: 1.6; }
 .welcome-card .btn.primary { margin-top: 20px; font-size: 15px; padding: 13px 24px; }
 .welcome-sep { border: none; border-top: 1px solid var(--line); margin: 26px 0 18px; }
 .welcome-card::before {
@@ -580,19 +588,22 @@ body.has-side-panel { padding-right: 340px; }
   flex: none; width: 28px; height: 28px; padding: 0; display: grid; place-items: center;
   border-radius: 8px; font-size: 13px; line-height: 1;
 }
-.view-row .v-del:hover { color: #ff9c9c; border-color: #ff9c9c; }
+.view-row .v-del:hover { color: var(--err); border-color: var(--err); }
 .view-row .mini { display: block; font-size: 11px; color: var(--dim); margin-top: 8px; }
 .chips-pick { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
 .chip-pick { font-size: 12px; padding: 4px 10px; border: 1px solid var(--line-strong); border-radius: 999px; cursor: pointer; background: var(--panel-2); color: var(--ink-soft); }
 .builder-actions { display: flex; flex-direction: column; gap: 8px; padding: 14px 16px 6px; }
-.builder-actions .btn { justify-content: center; }
+.builder-actions .btn { justify-content: center; width: 100%; }
+/* 兩顆產出按鈕外觀本來一模一樣，使用者分不出差別——各自補一行說明 */
+.action-item { display: flex; flex-direction: column; gap: 4px; }
+.action-sub { font-size: 11px; line-height: 1.5; color: var(--dim); text-align: center; padding: 0 2px; }
 /* 未建立預覽前，下載/打包是停用的——要讓人一眼看出「不是壞掉，是還沒輪到」*/
 .builder-actions .btn:disabled { opacity: .4; cursor: not-allowed; }
 .builder-actions .btn:disabled:hover { border-color: var(--line-strong); color: var(--ink-soft); }
 .builder-hint { padding: 0 16px 14px; font-size: 11px; color: var(--dim); text-align: center; }
 .build-msg { padding: 0 16px 16px; font-size: 12px; }
-.build-msg .ok { color: #6fe3b6; } .build-msg .err { color: #ff9c9c; }
-.build-msg .warn { margin-top: 6px; color: #e7d27a; background: rgba(231,210,122,.1); padding: 8px; border-radius: 8px; }
+.build-msg .ok { color: var(--ok); } .build-msg .err { color: var(--err); }
+.build-msg .warn { margin-top: 6px; color: var(--warn); background: rgba(231,210,122,.12); padding: 8px; border-radius: 8px; }
 .builder-preview { position: relative; overflow: auto; background: var(--bg-hero); border: 1px solid var(--line); border-radius: var(--radius); }
 .builder-preview .dashboard { padding: 0; }
 /* 空狀態：與其擺一行字空著三分之二畫面，不如把「要準備什麼」講清楚 */
