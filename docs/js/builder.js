@@ -12,7 +12,7 @@
   // 它的 markdown.js 等相依就會跟著被收進來。
   var ENTRY_PAGES = ["index.html", "builder.html", "format.html"];
   // 非必要、但帶著更完整的檔案（缺了不算失敗）：讓打包出的站也能看格式說明
-  var EXTRA_FILES = ["unified_zip_format.md",
+  var EXTRA_FILES = ["unified_zip_format.md", "unified_zip_format.en.md",
                      "exporters/unified_zip.R", "exporters/export_generic.py",
                      "exporters/example_generic.R", "exporters/example_generic.py",
                      "sample/scores.csv", "sample/taxa.csv", "sample/variance.csv", "sample/tree.nwk"];

@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>統一 Zip 格式與匯出器 — PCA Dashboard</title>
+  <title data-i18n="doc.pageTitle">統一 Zip 格式與匯出器 — PCA Dashboard</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='11' cy='15' r='7' fill='%230072B2'/%3E%3Crect x='17' y='9' width='12' height='12' fill='%23E69F00'/%3E%3C/svg%3E" />
   <script>
     (function(){try{var r=document.documentElement,p=localStorage.getItem('mp-themepref')||'auto',
@@ -11,7 +11,7 @@
       d=p==='auto'?(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'):p;
       r.setAttribute('data-theme',d);r.setAttribute('data-accent',a);}catch(e){}})();
   </script>
-  <link rel="stylesheet" href="css/style.css?v=19" />
+  <link rel="stylesheet" href="css/style.css?v=20" />
 </head>
 <body>
 <div class="app-shell">
@@ -23,7 +23,7 @@
     <div class="topbar-actions">
       <a class="btn" href="index.html" data-i18n="doc.toViewer">← 回檢視器</a>
       <a class="btn" href="builder.html" data-i18n="doc.toBuilder">建立精靈</a>
-      <a class="btn" href="unified_zip_format.md" download data-i18n="doc.raw">↓ 原始 .md</a>
+      <a class="btn" id="doc-raw" href="unified_zip_format.md" download data-i18n="doc.raw">↓ 原始 .md</a>
       <div class="settings-wrap">
         <button id="settings-tile" class="tile" data-i18n-title="set.title" title="設定" aria-label="設定">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg>
@@ -63,46 +63,72 @@
   </main>
 </div>
 
-<script src="js/i18n.js?v=19"></script>
-<script src="js/markdown.js?v=19"></script>
-<script src="js/theme.js?v=19"></script>
+<script src="js/i18n.js?v=20"></script>
+<script src="js/markdown.js?v=20"></script>
+<script src="js/theme.js?v=20"></script>
 <script>
-  /* 用站台樣式呈現 unified_zip_format.md。文件本身維持單一來源（那份 .md），
-     這裡只負責取回來、渲染、生目錄。 */
+  /* 用站台樣式呈現統一 Zip 格式文件。文件本身維持單一來源（那兩份 .md，zh/en 各一），
+     這裡只負責依語言取回來、渲染、生目錄；切語言時整份重繪。 */
   (function () {
     var FD = window.FrogDash || {};
     var body = document.getElementById("doc-body");
     var toc = document.getElementById("doc-toc");
+    var rawLink = document.getElementById("doc-raw");
+    var ZH = "unified_zip_format.md";
+    var EN = "unified_zip_format.en.md";
+    var shown = null;
 
     function slug(s, i) {
       return "sec-" + i + "-" + String(s).toLowerCase().replace(/[^\w一-鿿]+/g, "-").replace(/^-+|-+$/g, "");
     }
 
-    fetch("unified_zip_format.md")
-      .then(function (r) {
+    function paint(md) {
+      body.innerHTML = FD.renderMarkdown(md);
+      // 目錄：只收 h2，加上錨點
+      var hs = body.querySelectorAll("h2");
+      toc.hidden = !hs.length;
+      if (!hs.length) return;
+      var html = '<div class="doc-toc-t">' + ((FD.t && FD.t("doc.toc")) || "目錄") + "</div>";
+      hs.forEach(function (h, i) {
+        var id = slug(h.textContent, i);
+        h.id = id;
+        html += '<a href="#' + id + '">' + h.textContent + "</a>";
+      });
+      toc.innerHTML = html;
+    }
+
+    function fail(file, e) {
+      console.error(e);
+      body.innerHTML = '<p class="dim">' +
+        ((FD.t && FD.t("doc.failed")) || "載入說明文件失敗") + "：" + e.message +
+        ' — <a href="' + file + '">' +
+        ((FD.t && FD.t("doc.raw")) || "直接看原始 .md") + "</a></p>";
+    }
+
+    function get(file) {
+      return fetch(file).then(function (r) {
         if (!r.ok) throw new Error("HTTP " + r.status);
         return r.text();
-      })
-      .then(function (md) {
-        body.innerHTML = FD.renderMarkdown(md);
-        // 目錄：只收 h2，加上錨點
-        var hs = body.querySelectorAll("h2");
-        if (!hs.length) { toc.hidden = true; return; }
-        var html = '<div class="doc-toc-t">' + ((FD.t && FD.t("doc.toc")) || "目錄") + "</div>";
-        hs.forEach(function (h, i) {
-          var id = slug(h.textContent, i);
-          h.id = id;
-          html += '<a href="#' + id + '">' + h.textContent + "</a>";
-        });
-        toc.innerHTML = html;
-      })
-      .catch(function (e) {
-        console.error(e);
-        body.innerHTML = '<p class="dim">' +
-          ((FD.t && FD.t("doc.failed")) || "載入說明文件失敗") + "：" + e.message +
-          ' — <a href="unified_zip_format.md">' +
-          ((FD.t && FD.t("doc.raw")) || "直接看原始 .md") + "</a></p>";
       });
+    }
+
+    function load() {
+      var en = ((FD.i18n && FD.i18n.lang) || "zh") === "en";
+      var file = en ? EN : ZH;
+      if (file === shown) return;
+      shown = file;
+      if (rawLink) rawLink.setAttribute("href", file);
+      get(file)
+        // 英文版缺檔時退回中文版，不讓頁面整個空掉
+        .catch(function (e) { if (!en) throw e; console.warn(e); return get(ZH); })
+        .then(paint)
+        .catch(function (e) { shown = null; fail(file, e); });
+    }
+
+    load();
+    // i18n 沒有事件匯流排，改語言時會改 <html data-lang>，用它當訊號重繪
+    new MutationObserver(load).observe(document.documentElement,
+      { attributes: true, attributeFilter: ["data-lang"] });
   })();
 </script>
 </body>
