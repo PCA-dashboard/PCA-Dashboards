@@ -606,6 +606,15 @@ body.has-side-panel { padding-right: 340px; }
 .pe-step .n { flex: none; width: 21px; height: 21px; border-radius: 50%; display: grid; place-items: center;
   background: var(--accent); color: var(--on-accent); font-size: 11px; font-weight: 800; }
 .pe-step .t { font-size: 12px; color: var(--ink-soft); line-height: 1.55; }
+.pe-sample { text-align: left; font-size: 11.5px; line-height: 1.7; color: var(--dim);
+  background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-sm);
+  padding: 11px 13px; margin-bottom: 10px; }
+.pe-sample-files { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 7px; }
+.pe-sample-files a { padding: 3px 10px; border-radius: 999px; font-family: var(--mono); font-size: 11px;
+  font-weight: 700; background: var(--accent-soft); color: var(--accent-hi);
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent); }
+.pe-sample-files a:hover { background: var(--accent); color: var(--on-accent); border-color: transparent; }
+
 .pe-note { text-align: left; font-size: 11.5px; line-height: 1.7; color: var(--dim);
   background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-sm);
   padding: 11px 13px; margin-bottom: 12px; }

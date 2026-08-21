@@ -1,0 +1,18 @@
+species_id,display_label,family,habitat,body_mass
+Genus_A_sp1,Genus A sp1,Alphidae,aquatic,433
+Genus_A_sp2,Genus A sp2,Alphidae,aquatic,173
+Genus_A_sp3,Genus A sp3,Alphidae,aquatic,780
+Genus_A_sp4,Genus A sp4,Alphidae,aquatic,355
+Genus_A_sp5,Genus A sp5,Alphidae,aquatic,160
+Genus_A_sp6,Genus A sp6,Alphidae,aquatic,505
+Genus_B_sp1,Genus B sp1,Betidae,aquatic,436
+Genus_B_sp2,Genus B sp2,Betidae,aquatic,45
+Genus_B_sp3,Genus B sp3,Betidae,aquatic,689
+Genus_B_sp4,Genus B sp4,Betidae,aquatic,84
+Genus_B_sp5,Genus B sp5,Betidae,aquatic,787
+Genus_B_sp6,Genus B sp6,Betidae,aquatic,576
+Genus_C_sp1,Genus C sp1,Gammidae,terrestrial,591
+Genus_C_sp2,Genus C sp2,Gammidae,terrestrial,813
+Genus_C_sp3,Genus C sp3,Gammidae,terrestrial,842
+Genus_C_sp4,Genus C sp4,Gammidae,terrestrial,326
+Genus_C_sp5,Genus C sp5,Gammidae,terrestrial,353

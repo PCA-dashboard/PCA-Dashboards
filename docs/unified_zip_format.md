@@ -97,6 +97,10 @@ python3 exporters/common/unified_zip.py validate <zip>
 > 「已經算好的分數 CSV」；還在 R/Python 裡的資料請用下面的通用匯出器直接產 Zip。
 
 ### 建立精靈（瀏覽器，零安裝）
+想直接試跑？下載這組範例資料：**[↓ scores.csv](sample/scores.csv)**、
+**[↓ taxa.csv](sample/taxa.csv)**、**[↓ variance.csv](sample/variance.csv)**、
+**[↓ tree.nwk](sample/tree.nwk)**（17 物種／3 科／含樹）。
+
 開 `builder.html`：上傳分數 CSV → 分類 CSV →（可選）Newick 樹 → 建立預覽 →
 下載統一 Zip，或直接打包成一個可放 GitHub Pages 的完整網站。全程在你的瀏覽器內完成，
 資料不會上傳到任何伺服器。
@@ -105,6 +109,9 @@ python3 exporters/common/unified_zip.py validate <zip>
 
 **[↓ 下載 unified_zip.R](exporters/unified_zip.R)** — 單一檔案、只用 base R，
 放進專案 `source()` 就能用（傳 `phylo` 物件才需要 ape）。
+另有可執行範例 **[↓ example_generic.R](exporters/example_generic.R)**：自帶合成資料，
+和 `unified_zip.R` 放同一個資料夾，`Rscript example_generic.R` 就會產出一個能直接拖進
+檢視器的 Zip。
 
 `scores` 吃 `prcomp` / `gm.prcomp` / matrix / data.frame；沒傳 `variance` 時自動取
 `sdev^2`（`gm.prcomp` 取 `$d`）。
@@ -126,6 +133,9 @@ write_unified_zip(
 
 **[↓ 下載 export_generic.py](exporters/export_generic.py)** — 單一檔案、零相依，
 下載這一個 `.py` 就能用（numpy / pandas / sklearn 有裝就自動支援，沒裝也能跑）。
+另有可執行範例 **[↓ example_generic.py](exporters/example_generic.py)**：自帶合成資料，
+和 `export_generic.py` 放同一個資料夾，`python3 example_generic.py` 就會產出一個能直接
+拖進檢視器的 Zip。
 
 `scores` 吃 DataFrame / ndarray / dict / list-of-rows；`variance` 可直接傳 fitted 的
 sklearn `PCA`。
