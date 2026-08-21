@@ -90,7 +90,12 @@
     if (!box) return;
     var nameEl = box.querySelector(".filepick-name");
     var f = input.files && input.files[0];
-    if (nameEl) nameEl.textContent = f ? f.name : T("bld.noFile");
+    if (nameEl) {
+      // 已選檔案時要拔掉 data-i18n，否則切語言時 translateDom() 會把檔名蓋成「未選擇檔案」
+      if (f) nameEl.removeAttribute("data-i18n");
+      else nameEl.setAttribute("data-i18n", "bld.noFile");
+      nameEl.textContent = f ? f.name : T("bld.noFile");
+    }
     box.classList.toggle("has-file", !!f);
   }
   function msg(text, kind) {
@@ -105,19 +110,21 @@
     viewSeq++;
     var wrap = document.createElement("div");
     wrap.className = "view-row";
+    // 這些字串是 JS 動態產生的，一定要帶 data-i18n 屬性：切語言時 translateDom()
+    // 只認屬性，寫死的文字會永遠停在建立當下的語言（曾經就是這樣不同步）。
     function pick(cls) {
       return '<span class="filepick">' +
         '<input type="file" class="' + cls + '" accept=".csv" />' +
-        '<span class="filepick-btn">' + esc(T("bld.pickFile")) + '</span>' +
-        '<span class="filepick-name">' + esc(T("bld.noFile")) + '</span></span>';
+        '<span class="filepick-btn" data-i18n="bld.pickFile">' + esc(T("bld.pickFile")) + '</span>' +
+        '<span class="filepick-name" data-i18n="bld.noFile">' + esc(T("bld.noFile")) + '</span></span>';
     }
     wrap.innerHTML =
       '<div class="view-row-head">' +
-        '<input type="text" class="v-label" placeholder="' + esc(T("bld.viewName")) + '" value="' + esc(label || "") + '" />' +
-        '<button class="btn small v-del" title="' + esc(T("bld.vDel")) + '" aria-label="' + esc(T("bld.vDel")) + '">✕</button>' +
+        '<input type="text" class="v-label" data-i18n-ph="bld.viewName" placeholder="' + esc(T("bld.viewName")) + '" value="' + esc(label || "") + '" />' +
+        '<button class="btn small v-del" data-i18n-title="bld.vDel" title="' + esc(T("bld.vDel")) + '" aria-label="' + esc(T("bld.vDel")) + '">✕</button>' +
       '</div>' +
-      '<label class="mini">' + esc(T("bld.vScores")) + pick("v-scores") + '</label>' +
-      '<label class="mini">' + esc(T("bld.vVar")) + pick("v-var") + '</label>';
+      '<label class="mini"><span data-i18n="bld.vScores">' + esc(T("bld.vScores")) + '</span>' + pick("v-scores") + '</label>' +
+      '<label class="mini"><span data-i18n="bld.vVar">' + esc(T("bld.vVar")) + '</span>' + pick("v-var") + '</label>';
     wrap.querySelector(".v-del").addEventListener("click", function () { wrap.remove(); });
     el("views-list").appendChild(wrap);
   }
@@ -143,6 +150,16 @@
       if (h === chosen) o.selected = true; sel.appendChild(o);
     });
   }
+  /** 切語言後把欄位下拉重畫一次，保留目前選到的欄位。 */
+  function relabelSelects() {
+    if (!taxaHeader.length) return;
+    [["m-id", false], ["m-label", false], ["m-group", false], ["m-image", true]]
+      .forEach(function (p) {
+        var sel = el(p[0]);
+        if (sel) fillSelect(sel, taxaHeader, sel.value, p[1]);
+      });
+  }
+
   function onTaxaFile(file) {
     readFileText(file).then(function (text) {
       taxaText = text;
@@ -340,6 +357,11 @@
     document.querySelectorAll("[data-close-tut]").forEach(function (x) {
       x.addEventListener("click", function () { el("tutorial-modal").hidden = true; });
     });
+
+    // 切語言時重建欄位下拉：選項文字裡有「（無）」「（第 N 欄，無標題）」這種
+    // 翻譯字串，是 JS 塞進 option 的，translateDom() 碰不到，得自己重畫。
+    new MutationObserver(relabelSelects).observe(document.documentElement,
+      { attributes: true, attributeFilter: ["data-lang"] });
 
     // 預覽用模組（重用檢視器）：即使某個模組初始化失敗，左側表單仍可正常操作。
     try {
