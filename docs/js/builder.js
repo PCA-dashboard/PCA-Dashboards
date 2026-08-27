@@ -160,6 +160,65 @@
       });
   }
 
+  /* ---- 用 DOI 帶入資料集資訊 ----
+     一個 doi.org 內容協商端點同時吃期刊（Crossref）與資料集（DataCite）DOI，
+     所以不必判斷 DOI 屬於誰。已經填好的標題不覆蓋，避免蓋掉使用者自己打的字。 */
+  function initDoiFetch() {
+    var btn = el("doi-fetch"), input = el("f-doi"), out = el("doi-msg");
+    if (!btn || !input) return;
+    function say(text, kind) {
+      if (!out) return;
+      out.className = "dim small" + (kind ? " " + kind : "");
+      out.innerHTML = text;
+      out.hidden = !text;
+    }
+    function run() {
+      var DOI = FD.DOI;
+      var doi = DOI ? DOI.normalize(input.value) : "";
+      if (!doi) { say('<span class="err">' + esc(T("bld.doiBad")) + "</span>"); return; }
+      say(esc(T("bld.doiLoading")));
+      btn.disabled = true;
+      Promise.all([DOI.meta(doi), DOI.cite(doi).catch(function () { return null; })])
+        .then(function (r) {
+          var m = r[0], apa = r[1];
+          if (!el("f-title").value.trim() && m.title) el("f-title").value = m.title;
+          if (!el("f-source").value.trim() && m.url) el("f-source").value = m.url;
+          if (!el("f-cite").value.trim() && apa) el("f-cite").value = apa;
+          input.value = m.doi;
+          var extra = [];
+          if (m.license) extra.push(esc(T("bld.doiLicense", { l: m.license.label })));
+          say('<span class="ok">' + esc(T("bld.doiOk", { t: m.title || m.doi })) + "</span>" +
+              (extra.length ? " · " + extra.join(" · ") : ""));
+          // 論文 ↔ 資料 DOI：查得到就提示另一個，讓使用者知道還有一半可以填
+          return DOI.related(doi).then(function (rel) {
+            var other = rel.paper || rel.data;
+            if (!other) return;
+            var k = rel.paper ? "bld.doiPaper" : "bld.doiData";
+            out.innerHTML += ' · ' + esc(T(k)) + ' <a href="https://doi.org/' + esc(other) +
+              '" target="_blank" rel="noopener">' + esc(other) + "</a>";
+          }).catch(function () {});
+        })
+        .catch(function (e) {
+          say('<span class="err">' + esc(T("bld.doiFail", { msg: e.message || e })) + "</span>");
+        })
+        .then(function () { btn.disabled = false; });
+    }
+    btn.addEventListener("click", run);
+    input.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); run(); } });
+  }
+
+  /** 切語言時要跟著處理的動態內容。 */
+  function onLangChange() {
+    relabelSelects();
+    // 狀態訊息是即時拼出來的字串（含檔名、標題、錯誤訊息），沒辦法用屬性重譯；
+    // 留著就會變成「中文介面配英文訊息」或反過來。當下狀態已經過去了，直接清掉。
+    [el("doi-msg"), el("build-msg")].forEach(function (m) {
+      if (!m) return;
+      m.innerHTML = "";
+      if (m.id === "doi-msg") m.hidden = true;
+    });
+  }
+
   function onTaxaFile(file) {
     readFileText(file).then(function (text) {
       taxaText = text;
@@ -351,6 +410,7 @@
       if (e.target && e.target.type === "file") syncFilePick(e.target);
     });
     el("f-taxa").addEventListener("change", function (e) { if (e.target.files[0]) onTaxaFile(e.target.files[0]); });
+    initDoiFetch();
     el("btn-preview").addEventListener("click", preview);
     el("btn-zip").addEventListener("click", downloadZip);
     el("btn-package").addEventListener("click", packageSite);
@@ -360,7 +420,7 @@
 
     // 切語言時重建欄位下拉：選項文字裡有「（無）」「（第 N 欄，無標題）」這種
     // 翻譯字串，是 JS 塞進 option 的，translateDom() 碰不到，得自己重畫。
-    new MutationObserver(relabelSelects).observe(document.documentElement,
+    new MutationObserver(onLangChange).observe(document.documentElement,
       { attributes: true, attributeFilter: ["data-lang"] });
 
     // 預覽用模組（重用檢視器）：即使某個模組初始化失敗，左側表單仍可正常操作。

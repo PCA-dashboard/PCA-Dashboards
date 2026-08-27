@@ -101,7 +101,8 @@ python3 exporters/common/unified_zip.py validate <zip>
 **[↓ taxa.csv](sample/taxa.csv)**、**[↓ variance.csv](sample/variance.csv)**、
 **[↓ tree.nwk](sample/tree.nwk)**（17 物種／3 科／含樹）。
 
-開 `builder.html`：上傳分數 CSV → 分類 CSV →（可選）Newick 樹 → 建立預覽 →
+開 `builder.html`：填 DOI 按「帶入」可自動補上標題、引用與來源網址（查 doi.org，
+期刊與資料集 DOI 都吃）；接著上傳分數 CSV → 分類 CSV →（可選）Newick 樹 → 建立預覽 →
 下載統一 Zip，或直接打包成一個可放 GitHub Pages 的完整網站。全程在你的瀏覽器內完成，
 資料不會上傳到任何伺服器。
 

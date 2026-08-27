@@ -12,6 +12,12 @@
   };
 
   // 依 plotly 符號名畫 SVG（圖例/資訊卡共用）
+  function esc(s) {
+    return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c];
+    });
+  }
+
   function svgSymbol(symbol, color, size) {
     size = size || 18; var c = size / 2, r = size * 0.38, s = "";
     function poly(pts) { return '<polygon points="' + pts + '" fill="' + color + '"/>'; }
@@ -75,11 +81,44 @@
     var d = model.dataset, meta = document.getElementById("dataset-meta");
     if (!meta) return;
     var bits = [];
-    if (d.doi) bits.push('DOI <a href="https://doi.org/' + d.doi + '" target="_blank" rel="noopener">' + d.doi + '</a>');
     var T = function (k, p) { return global.FrogDash.t ? global.FrogDash.t(k, p) : k; };
+    if (d.doi) bits.push('DOI <a href="https://doi.org/' + d.doi + '" target="_blank" rel="noopener">' + d.doi + '</a>');
     if (d.source_url) bits.push('<a href="' + d.source_url + '" target="_blank" rel="noopener">' + T("meta.source") + '</a>');
     if (d.created_with) bits.push(T("meta.madeWith", { w: d.created_with }));
-    meta.innerHTML = '<div class="row">' + bits.join(" · ") + '</div>' + (d.citation ? '<span class="cite">' + d.citation + '</span>' : "");
+    if (d.doi) bits.push('<button id="cite-btn" class="linkish" data-i18n="cite.btn">' + T("cite.btn") + '</button>');
+    meta.innerHTML = '<div class="row">' + bits.join(" · ") + '</div>' +
+      (d.citation ? '<span class="cite">' + d.citation + '</span>' : "") +
+      '<div class="row meta-extra" id="meta-extra" hidden></div>';
+    if (d.doi) enrichMeta(d.doi, T);
+  }
+
+  /* 用 DOI 補上「授權徽章」與「論文↔資料 DOI」。查得到才加，查不到就維持原樣：
+     離線時整個 Dashboard 仍要能用，這一段永遠不能變成必要條件。 */
+  function enrichMeta(doi, T) {
+    var host = document.getElementById("meta-extra");
+    var DOI = global.FrogDash.DOI;
+    if (!host || !DOI) return;
+    var slot = { lic: "", rel: "" };
+    function flush() {
+      var parts = [slot.lic, slot.rel].filter(Boolean);
+      host.innerHTML = parts.join(" · ");
+      host.hidden = !parts.length;
+    }
+    DOI.meta(doi).then(function (m) {
+      if (!m.license) return;
+      var lbl = esc(m.license.label);
+      slot.lic = m.license.url
+        ? '<a class="lic-badge" href="' + esc(m.license.url) + '" target="_blank" rel="noopener">' + lbl + '</a>'
+        : '<span class="lic-badge">' + lbl + '</span>';
+      flush();
+    }).catch(function () {});
+    DOI.related(doi).then(function (r) {
+      var out = [];
+      if (r.paper) out.push(T("meta.paperDoi") + ' <a href="https://doi.org/' + esc(r.paper) + '" target="_blank" rel="noopener">' + esc(r.paper) + "</a>");
+      if (r.data) out.push(T("meta.dataDoi") + ' <a href="https://doi.org/' + esc(r.data) + '" target="_blank" rel="noopener">' + esc(r.data) + "</a>");
+      slot.rel = out.join(" · ");
+      flush();
+    }).catch(function () {});
   }
 
   function renderAll() {

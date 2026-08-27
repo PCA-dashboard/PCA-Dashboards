@@ -110,7 +110,7 @@ Want to try it right away? Grab this sample dataset: **[↓ scores.csv](sample/s
 **[↓ taxa.csv](sample/taxa.csv)**, **[↓ variance.csv](sample/variance.csv)**,
 **[↓ tree.nwk](sample/tree.nwk)** (17 species / 3 families / with a tree).
 
-Open `builder.html`: upload the scores CSV → the taxonomy CSV → (optionally) a Newick tree →
+Open `builder.html`: type a DOI and press Fetch to fill in the title, citation and source URL automatically (it asks doi.org, which handles both journal and dataset DOIs); then upload the scores CSV → the taxonomy CSV → (optionally) a Newick tree →
 build a preview → download the unified Zip, or package a complete site you can drop on GitHub
 Pages. Everything happens inside your browser; nothing is uploaded to any server.
 

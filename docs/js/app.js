@@ -5,6 +5,13 @@
 
   var statusEl, welcomeEl, dashboardEl;
 
+  function T(k, p) { return FD.t ? FD.t(k, p) : k; }
+  function esc(s) {
+    return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c];
+    });
+  }
+
   // 目前資料集的來源，供「下載資料」使用：{ url } 或 { blob }（烤入 / 上傳的情況）
   var currentSource = null;
 
@@ -171,6 +178,90 @@
     if (zipBtn) zipBtn.addEventListener("click", downloadCurrentData);
   }
 
+  /* ---- 引用視窗：APA / BibTeX / RIS ----
+     全部由 doi.org 內容協商即時取得（一個端點同時吃 Crossref 與 DataCite DOI），
+     結果快取在 localStorage。查不到就在視窗裡說明並附上 doi.org 連結，不擋其他功能。 */
+  function initCite() {
+    var modal = document.getElementById("cite-modal");
+    if (!modal) return;
+    var FIELDS = [["cite-apa", "cite"], ["cite-bibtex", "bibtex"], ["cite-ris", "ris"]];
+
+    function fill(doi) {
+      var DOI = FD.DOI, err = document.getElementById("cite-err");
+      err.hidden = true; err.textContent = "";
+      FIELDS.forEach(function (f) {
+        var el = document.getElementById(f[0]);
+        el.setAttribute("data-i18n", "cite.loading");
+        el.textContent = T("cite.loading");
+        el.classList.add("dim");
+        DOI[f[1]](doi).then(function (txt) {
+          // 拿到內容就把 data-i18n 拔掉，否則切語言時 translateDom() 會把引用字串
+          // 蓋回「查詢中…」（跟建立精靈的檔名是同一類坑）
+          el.removeAttribute("data-i18n");
+          el.textContent = txt;
+          el.classList.remove("dim");
+        }).catch(function (e) {
+          el.removeAttribute("data-i18n");
+          el.textContent = "—";
+          err.hidden = false;
+          err.innerHTML = esc(T("cite.failed", { msg: e.message || e })) +
+            ' <a href="https://doi.org/' + esc(doi) + '" target="_blank" rel="noopener">https://doi.org/' + esc(doi) + "</a>";
+        });
+      });
+    }
+
+    // 圖例條會重繪，引用鈕用委派綁
+    document.addEventListener("click", function (e) {
+      if (!e.target.closest("#cite-btn")) return;
+      var d = Store.data && Store.data.dataset;
+      if (!d || !d.doi) return;
+      modal.hidden = false;
+      fill(d.doi);
+    });
+    modal.querySelectorAll("[data-close-cite]").forEach(function (x) {
+      x.addEventListener("click", function () { modal.hidden = true; });
+    });
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape" && !modal.hidden) modal.hidden = true;
+    });
+
+    modal.addEventListener("click", function (e) {
+      var copy = e.target.closest(".cite-copy"), dl = e.target.closest(".cite-dl");
+      var btn = copy || dl; if (!btn) return;
+      var txt = document.getElementById(btn.dataset.target).textContent;
+      if (!txt || txt === "—") return;
+      if (copy) {
+        var done = function () {
+          var old = btn.textContent;
+          btn.textContent = T("cite.copied");
+          setTimeout(function () { btn.textContent = old; }, 1200);
+        };
+        // clipboard API 在非安全來源（純 http 開檔）不存在，退回 textarea + execCommand
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(txt).then(done).catch(function () { legacyCopy(txt); done(); });
+        } else { legacyCopy(txt); done(); }
+        return;
+      }
+      var name = ((Store.data && Store.data.dataset && Store.data.dataset.title) || "citation")
+        .replace(/[^\w.-]+/g, "_").slice(0, 60);
+      saveText(txt, name + "." + btn.dataset.ext);
+    });
+  }
+  function legacyCopy(txt) {
+    var ta = document.createElement("textarea");
+    ta.value = txt; ta.style.position = "fixed"; ta.style.opacity = "0";
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand("copy"); } catch (e) {}
+    document.body.removeChild(ta);
+  }
+  function saveText(txt, filename) {
+    var url = URL.createObjectURL(new Blob([txt], { type: "text/plain;charset=utf-8" }));
+    var a = document.createElement("a");
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+  }
+
   function initButtons() {
     document.getElementById("clear-btn").addEventListener("click", function () {
       Store.clearHighlight();
@@ -240,6 +331,7 @@
     initLoaders();
     initButtons();
     initDataDownload();
+    initCite();
 
     // 載入來源優先序：烤入資料（單站）→ gallery 目錄 → 上傳畫面
     if (global.FROG_BAKED_ZIP_BASE64) loadBaked();

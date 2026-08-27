@@ -21,7 +21,7 @@
 
 ## 技術風格
 - Vanilla JS,IIFE 模組掛在 `window.FrogDash`(別名 `FD`),**無 build step**。
-- 快取破壞:所有 `<script>`/`<link>` 用 `?v=N`,改版時整批 +1(目前 **v=22**)。
+- 快取破壞:所有 `<script>`/`<link>` 用 `?v=N`,改版時整批 +1(目前 **v=23**)。
 - 主題系統:`<html data-theme=dark|light data-accent=lime|cyan|violet|amber|coral>`,localStorage 記憶,head 內有 inline script 防閃爍。
 - i18n:`data-i18n` / `-ph` / `-title` 屬性 + `FD.t(key,params)`;字典在 `docs/js/i18n.js`。
   說明文件頁 `format.html` 的**正文**不走字典,而是依 `<html data-lang>` 抓 `unified_zip_format.md`(中)或 `unified_zip_format.en.md`(英);改一份就要同步另一份,章節結構必須一致。
@@ -55,6 +55,17 @@
 - `index.html` 檢視器 · `builder.html` 建立精靈(讓別人上傳自己的 PCA 打包成站)
 - `css/style.css` 全站樣式(含主題 token、RWD)
 - PCA 圖的拖曳只有一個,平移與框選分時共用:預設 `dragmode='pan'`,面板上的「框選」鈕切成 `select`(此時 Shift＝Plotly 原生加選),沒開框選時按住 Shift 拖曳＝臨時框選。回平移時**必須**把 `_fullLayout.selections` 清空,否則殘留的選取框會把拖曳吃掉去搬動它,平移完全沒反應。
+- DOI 接入(`docs/js/doi.js`,`FD.DOI`):全部走有 CORS 的公開 API,結果快取 localStorage(30 天)。
+  `doi.org` 內容協商一個端點同時吃 Crossref(期刊)與 DataCite(資料集)DOI,`Accept` 換格式就換輸出:
+  CSL-JSON(中繼資料/授權)、`text/x-bibliography; style=apa`(引用字串)、`application/x-bibtex`、
+  `application/x-research-info-systems`(RIS)。論文↔資料 DOI 互查用 DataCite **搜尋**端點
+  (`?query=doi:"X" OR relatedIdentifiers.relatedIdentifier:"X"`),不要用 `GET /dois/<doi>`——
+  後者對期刊 DOI 回 404,console 會留紅字;搜尋一律 200 且一次涵蓋兩個方向。
+  用途:檢視器的授權徽章 + 論文/資料 DOI + 引用視窗(APA/BibTeX/RIS),建立精靈的「帶入」。
+  **查不到一律安靜降級**,離線時仍用 zip 內既有的 doi/citation。
+- 動態產生的文字若要能切語言,一定要帶 `data-i18n` 屬性(`translateDom()` 只認屬性);
+  已填入的即時內容(檔名、引用字串)要**把屬性拔掉**,否則會被翻譯蓋掉;
+  拼字串的狀態訊息無法重譯,切語言時直接清掉。
 - `js/`:`app.js`(主流程)、`state.js`、`zip-loader.js`、`remote-image.js`、`gbif-image.js`、`i18n.js`、`theme.js`、`overview.js`、`pca-view.js`、`tree-view.js`、`info-panel.js`、`legend.js`、`groups.js`、`search.js`
 - `data/catalog.json` 案例清單 · `data/*.zip` 各案例資料 · `data/img/**` 鏡像散檔 · `data/foram_obj_images.json` Zenodo offset index
 

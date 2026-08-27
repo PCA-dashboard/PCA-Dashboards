@@ -447,6 +447,30 @@ select option, select optgroup { background: var(--panel); color: var(--ink); }
 .dataset-meta .row { margin: 1px 0; }
 .dataset-meta a { color: var(--accent); }
 .dataset-meta .cite { display: block; margin-top: 3px; font-size: 11px; opacity: .85; }
+.dataset-meta .meta-extra { margin-top: 5px; }
+.linkish { background: none; border: none; padding: 0; font: inherit; color: var(--accent);
+           cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
+.linkish:hover { color: var(--accent-hi); }
+/* 授權徽章：資料來源那一列的小標，deep link 到授權條文 */
+.lic-badge { display: inline-block; padding: 1px 7px; border-radius: 999px; font-size: 11px;
+             font-weight: 700; letter-spacing: .02em; border: 1px solid var(--line-strong);
+             background: var(--panel-2); color: var(--ink-soft); text-decoration: none; }
+a.lic-badge:hover { border-color: var(--accent); color: var(--ink); }
+
+/* 引用視窗 */
+.cite-block { margin: 14px 0; }
+.cite-head { display: flex; align-items: center; justify-content: space-between; gap: 10px;
+             font-size: 12px; font-weight: 700; color: var(--ink-soft); margin-bottom: 5px; }
+.cite-acts { display: inline-flex; gap: 6px; }
+.cite-text { margin: 0; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px;
+             background: var(--sunken); color: var(--ink); font-size: 12px; line-height: 1.55;
+             max-height: 190px; overflow: auto; white-space: pre-wrap; word-break: break-word; }
+.cite-text.mono { font-family: var(--mono); font-size: 11px; }
+
+/* 建立精靈：DOI 欄位 + 「帶入」鈕同一列 */
+.fld-row { display: flex; gap: 6px; align-items: stretch; }
+.fld-row input { flex: 1; min-width: 0; }
+.fld-row .btn { flex: none; white-space: nowrap; }
 
 /* 親緣樹 */
 .tree-panel { min-height: 0; }
