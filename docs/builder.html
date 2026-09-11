@@ -11,7 +11,7 @@
       d=p==='auto'?(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'):p;
       r.setAttribute('data-theme',d);r.setAttribute('data-accent',a);}catch(e){}})();
   </script>
-  <link rel="stylesheet" href="css/style.css?v=24" />
+  <link rel="stylesheet" href="css/style.css?v=25" />
   <script src="vendor/jszip/jszip-3.10.1.min.js"></script>
   <script src="vendor/plotly/plotly-2.35.2.min.js"></script>
   <script src="vendor/phylocanvas/phylocanvas.gl-1.64.0.bundle.js"></script>
@@ -91,6 +91,20 @@
             </span>
           </div>
           <div id="intake-missing" class="intake-missing" hidden></div>
+          <!-- 圖片：只有投入的檔案裡有圖時才出現。預算天花板是 GitHub，不是我們。 -->
+          <div id="img-panel" class="img-panel" hidden>
+            <div class="img-head"><b data-i18n="img.title">圖片</b><span id="img-summary" class="dim small"></span></div>
+            <div class="img-opts">
+              <label class="img-opt"><input type="checkbox" id="img-resize" checked />
+                <span data-i18n="img.resize">縮圖（長邊 640、JPEG）</span></label>
+              <label class="img-opt"><span data-i18n="img.mode">放哪裡</span>
+                <select id="img-mode">
+                  <option value="loose" data-i18n="img.modeLoose">站台散檔（建議）</option>
+                  <option value="embed" data-i18n="img.modeEmbed">內嵌進資料包</option>
+                </select></label>
+            </div>
+            <div id="img-notes" class="img-notes"></div>
+          </div>
           <div class="intake-table-wrap"><table class="intake-table" id="intake-table"></table></div>
         </div>
       </section>
@@ -266,19 +280,20 @@ Genus_A_sp2,2.017,-0.884,0.341</code>
     </div>
   </div>
 
-  <script src="js/state.js?v=24"></script>
-  <script src="js/i18n.js?v=24"></script>
-  <script src="js/zip-loader.js?v=24"></script>
-  <script src="js/doi.js?v=24"></script>
-  <script src="js/intake.js?v=24"></script>
-  <script src="js/unified-build.js?v=24"></script>
-  <script src="js/groups.js?v=24"></script>
-  <script src="js/legend.js?v=24"></script>
-  <script src="js/pca-view.js?v=24"></script>
-  <script src="js/tree-view.js?v=24"></script>
-  <script src="js/info-panel.js?v=24"></script>
-  <script src="js/search.js?v=24"></script>
-  <script src="js/theme.js?v=24"></script>
-  <script src="js/builder.js?v=24"></script>
+  <script src="js/state.js?v=25"></script>
+  <script src="js/i18n.js?v=25"></script>
+  <script src="js/zip-loader.js?v=25"></script>
+  <script src="js/doi.js?v=25"></script>
+  <script src="js/intake.js?v=25"></script>
+  <script src="js/images.js?v=25"></script>
+  <script src="js/unified-build.js?v=25"></script>
+  <script src="js/groups.js?v=25"></script>
+  <script src="js/legend.js?v=25"></script>
+  <script src="js/pca-view.js?v=25"></script>
+  <script src="js/tree-view.js?v=25"></script>
+  <script src="js/info-panel.js?v=25"></script>
+  <script src="js/search.js?v=25"></script>
+  <script src="js/theme.js?v=25"></script>
+  <script src="js/builder.js?v=25"></script>
 </body>
 </html>

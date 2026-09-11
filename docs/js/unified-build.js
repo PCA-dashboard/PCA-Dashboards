@@ -61,7 +61,8 @@
    *   dataset:{title,doi,citation,source_url},
    *   views:[{label, scoresText, varianceText?}],
    *   taxa:{text, idCol, labelCol, groupCol, imageCol?, infoCols:[...]},
-   *   tree:{newick?}   // 可選
+   *   tree:{newick?},  // 可選
+   *   images:{ mode:"loose"|"embed", entries:[{out, blob, sids:[...]}] }  // 可選
    * }
    * 回傳 { blob, warnings:[...] }
    */
@@ -80,6 +81,16 @@
     var infoCols = inputs.taxa.infoCols || [];
     if (idIdx < 0) throw uiErr("找不到 species_id 欄：" + inputs.taxa.idCol);
 
+    // 圖片：entries 由 images.js 處理好（已縮圖、已改名）。有 entries 時 image 欄一律
+    // 改寫成我們的輸出檔名，不能沿用使用者原本欄位裡的舊檔名——檔案已經被改名了。
+    var img = inputs.images || {};
+    var imgEntries = img.entries || [];
+    var sidToOut = {};
+    imgEntries.forEach(function (e) {
+      (e.sids || []).forEach(function (sid) { sidToOut[sid] = e.out; });
+    });
+    var hasImgEntries = imgEntries.length > 0;
+
     var taxaHeader = ["species_id", "display_label", "clade", "image"].concat(infoCols);
     var groupValues = [];
     var taxaIds = {};
@@ -88,7 +99,8 @@
       taxaIds[sid] = 1;
       var gv = groupIdx >= 0 ? r[groupIdx] : "";
       groupValues.push(gv);
-      var base = [sid, labelIdx >= 0 ? r[labelIdx] : sid, gv, imgIdx >= 0 ? r[imgIdx] : ""];
+      var imgVal = hasImgEntries ? (sidToOut[sid] || "") : (imgIdx >= 0 ? r[imgIdx] : "");
+      var base = [sid, labelIdx >= 0 ? r[labelIdx] : sid, gv, imgVal];
       infoCols.forEach(function (c) { base.push(r[t.header.indexOf(c)]); });
       return base;
     });
@@ -170,6 +182,17 @@
       groups: groups
     };
     if (manifestTree) manifest.tree = manifestTree;
+
+    if (hasImgEntries) {
+      if (img.mode === "embed") {
+        // 內嵌：只適合少量小圖。JPEG 已經壓過了，再 DEFLATE 只是浪費 CPU，用 STORE。
+        imgEntries.forEach(function (e) { zip.file("images/" + e.out, e.blob, { compression: "STORE" }); });
+      } else {
+        // 散檔：圖片放在站台的 img/，資料包只記路徑。一律相對路徑——多數人用的是
+        // https://user.github.io/<repo>/ 這種 project page，絕對路徑會全部破圖。
+        manifest.taxa.image_base_url = "img/";
+      }
+    }
 
     zip.file("manifest.json", JSON.stringify(manifest, null, 2));
     Object.keys(files).forEach(function (p) { zip.file(p, files[p]); });

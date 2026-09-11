@@ -337,6 +337,8 @@
     });
     images.forEach(function (im) {
       im.detail.matched = tid ? tid.indexOf(im.detail.key) >= 0 : false;
+      // 比對結果要攤開：使用者才知道這張圖會不會真的出現在網站上
+      if (tid) im.reasons.push(im.detail.matched ? "檔名對得到物種" : "檔名對不到任何物種");
     });
 
     // variance 配對：檔名共同前綴優先，只有一組時直接配

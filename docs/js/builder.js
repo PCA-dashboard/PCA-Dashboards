@@ -345,6 +345,7 @@
     }
     mbox.innerHTML = mh;
     mbox.hidden = false;
+    renderImages();
     el("intake-apply").disabled = req.length > 0;
 
     // 判讀表：一律攤開，但可以「全部接受」一鍵通過（決定 4）
@@ -448,6 +449,8 @@
       filesFromDataTransfer(e.dataTransfer).then(runIntake);
     });
     el("intake-apply").addEventListener("click", applyPlan);
+    el("img-resize").addEventListener("change", renderImages);
+    el("img-mode").addEventListener("change", function () { imgDone = null; });
     el("intake-reset").addEventListener("click", function () {
       intakeFiles = []; intakeResult = null;
       el("intake-result").hidden = true; intakeMsg("");
@@ -483,7 +486,91 @@
   }
 
   // ---- 收集輸入 ----
+
+  /* ---- 圖片（第 3 期）----
+     規劃／命名／預算在 images.js（純函式，Node 測試釘住）；這裡只負責 UI 與時機。
+     圖片目前只從「投入」進來——手動路徑沒有地方放一整個資料夾。 */
+  var imgPlan = null;            // planImages() 的結果
+  var imgDone = null;            // { resize, entries } 處理結果快取，設定沒變就不重做
+
+  function imgFiles() {
+    if (!intakeResult) return [];
+    return intakeResult.files.filter(function (f) { return f.role === "image"; })
+      .map(function (f) { return { name: f.name, size: f.size }; });
+  }
+
+  /** 判讀完（或改判、或改設定）後重算圖片計畫與預算。 */
+  function renderImages() {
+    var panel = el("img-panel");
+    if (!panel || !FD.Images) return;
+    var Im = FD.Images;
+    var files = imgFiles();
+    var taxa = intakeResult && intakeResult.plan.taxaFile
+      ? intakeResult.files.filter(function (f) { return f.name === intakeResult.plan.taxaFile; })[0] : null;
+    if (!files.length || !taxa) { panel.hidden = true; imgPlan = null; return; }
+    panel.hidden = false;
+
+    var resize = el("img-resize").checked;
+    imgPlan = Im.planImages(files, taxa.detail.idsRaw || [], { resize: resize });
+    var est = Im.estimate(imgPlan.pairs.map(function (p) { return p.size; }), { resize: resize });
+
+    el("img-summary").textContent = T("img.summary", {
+      n: files.length, covered: imgPlan.covered, total: imgPlan.total, size: Im.humanBytes(est.outBytes)
+    });
+
+    // 內嵌只適合少量小圖：超過就擋住，並說明為什麼
+    var mode = el("img-mode");
+    var embedOk = imgPlan.pairs.length <= 50 && est.outBytes <= 20 * 1024 * 1024;
+    mode.options[1].disabled = !embedOk;
+    if (!embedOk && mode.value === "embed") mode.value = "loose";
+
+    var notes = [];
+    est.warnings.forEach(function (w) {
+      notes.push('<div class="note ' + (w.level === "error" ? "err" : "warn") + '">' +
+        esc(T("img.warn." + w.key, { v: Im.humanBytes(w.value), n: w.value })) + "</div>");
+    });
+    if (imgPlan.extra.length) {
+      notes.push('<div class="note dim">' + esc(T("img.extra", { n: imgPlan.extra.length })) +
+        " " + esc(imgPlan.extra.slice(0, 3).map(function (x) { return x.split("/").pop(); }).join("、")) +
+        (imgPlan.extra.length > 3 ? "…" : "") + "</div>");
+    }
+    if (imgPlan.dupes.length) {
+      notes.push('<div class="note dim">' + esc(T("img.dupes", { n: imgPlan.dupes.length })) + "</div>");
+    }
+    if (imgPlan.ambiguous && imgPlan.ambiguous.length) {
+      notes.push('<div class="note warn">' + esc(T("img.ambiguous", {
+        n: imgPlan.ambiguous.length, ids: imgPlan.ambiguous[0].ids.join(" / ")
+      })) + "</div>");
+    }
+    if (!embedOk) notes.push('<div class="note dim">' + esc(T("img.embedOff")) + "</div>");
+    el("img-notes").innerHTML = notes.join("");
+    imgDone = null;                       // 設定變了，之前處理好的不算數
+  }
+
+  /** 真的把圖片處理成 blob。回傳 buildZipBlob 要的 inputs.images。 */
+  function ensureImages() {
+    if (!imgPlan || !imgPlan.pairs.length) return Promise.resolve(null);
+    var resize = el("img-resize").checked, mode = el("img-mode").value;
+    if (imgDone && imgDone.resize === resize) return Promise.resolve({ mode: mode, entries: imgDone.entries });
+    msg(T("img.processing", { n: imgPlan.pairs.length, done: 0 }));
+    return FD.Images.processAll(imgPlan, fileByName, { resize: resize }, function (done, total) {
+      if (done % 10 === 0 || done === total) msg(T("img.processing", { n: total, done: done }));
+    }).then(function (res) {
+      imgDone = { resize: resize, entries: res.entries };
+      if (res.failed.length) {
+        // 解不開的檔（HEIC、損毀檔）不讓整批失敗，但也絕不靜默跳過
+        warnFromImages = T("img.failed", {
+          n: res.failed.length,
+          names: res.failed.slice(0, 3).map(function (x) { return x.file.split("/").pop(); }).join("、")
+        });
+      } else warnFromImages = null;
+      return { mode: mode, entries: res.entries };
+    });
+  }
+  var warnFromImages = null;
+
   function collectInputs() {
+
     if (!taxaText) throw uiErr(T("bld.needTaxa"));
     var rows = Array.prototype.slice.call(document.querySelectorAll("#views-list .view-row"));
     if (!rows.length) throw uiErr(T("bld.needView"));
@@ -522,7 +609,10 @@
   // ---- 建立 & 預覽 ----
   function buildBlob() {
     return collectInputs().then(function (inputs) {
-      return UB.buildZipBlob(inputs);
+      return ensureImages().then(function (images) {
+        if (images) inputs.images = images;
+        return UB.buildZipBlob(inputs);
+      });
     });
   }
 
@@ -546,6 +636,8 @@
         var w = out.warnings.length
           ? '<div class="warn">' + esc(T("bld.warnN", { n: out.warnings.length })) + '<br>' + out.warnings.slice(0, 6).map(esc).join("<br>") + '</div>'
           : "";
+        // 圖片解不開（HEIC、損毀檔）不讓整批失敗，但一定要說出來
+        if (warnFromImages) w += '<div class="warn">' + esc(warnFromImages) + "</div>";
         msg('<span class="ok">' + esc(T("bld.ok", { n: model.joinReport.nTaxa })) + '</span>' + w, "");
       });
     }).catch(function (e) {
@@ -596,6 +688,13 @@
         out.file("data/baked.js",
           "/* 內嵌資料（統一 Zip，base64）：本站開啟即自動載入，觀看者不需再上傳。*/\n" +
           'window.FROG_BAKED_ZIP_BASE64="' + b64 + '";\n');
+        // 散檔圖片：跟著站台一起進 zip，解開後 git add . 就一併上去。
+        // JPEG 已經壓過了，再 DEFLATE 只是浪費 CPU。
+        if (imgDone && el("img-mode").value === "loose") {
+          imgDone.entries.forEach(function (e) {
+            out.file("img/" + e.out, e.blob, { compression: "STORE" });
+          });
+        }
         out.file(".nojekyll", "");
         return out.generateAsync({ type: "blob", compression: "DEFLATE" });
       })

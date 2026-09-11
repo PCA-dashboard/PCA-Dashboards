@@ -41,7 +41,7 @@
 
 ## 技術風格
 - Vanilla JS,IIFE 模組掛在 `window.FrogDash`(別名 `FD`),**無 build step**。
-- 快取破壞:所有 `<script>`/`<link>` 用 `?v=N`,改版時整批 +1(目前 **v=24**)。
+- 快取破壞:所有 `<script>`/`<link>` 用 `?v=N`,改版時整批 +1(目前 **v=25**)。
 - 主題系統:`<html data-theme=dark|light data-accent=lime|cyan|violet|amber|coral>`,localStorage 記憶,head 內有 inline script 防閃爍。
 - i18n:`data-i18n` / `-ph` / `-title` 屬性 + `FD.t(key,params)`;字典在 `docs/js/i18n.js`。
   說明文件頁 `format.html` 的**正文**不走字典,而是依 `<html data-lang>` 抓 `unified_zip_format.md`(中)或 `unified_zip_format.en.md`(英);改一份就要同步另一份,章節結構必須一致。
@@ -86,6 +86,11 @@
 - 動態產生的文字若要能切語言,一定要帶 `data-i18n` 屬性(`translateDom()` 只認屬性);
   已填入的即時內容(檔名、引用字串)要**把屬性拔掉**,否則會被翻譯蓋掉;
   拼字串的狀態訊息無法重譯,切語言時直接清掉。
+- 圖片處理(`docs/js/images.js`,`FD.Images`):規劃/命名/預算是**純函式**(Node 可測),只有 downscale/processAll 需要瀏覽器。
+  預設縮圖(長邊 640、JPEG q82,對齊 `image_pipeline/`)+ **散檔**(`img/` + `image_base_url`)。
+  **坑**:`downscale` 只有「本來就在尺寸內」時才比位元組大小;**尺寸真的縮過就一定要用縮過的版本**——
+  雜訊多的大照片轉 JPEG 後常比原 PNG 大,若因此退回原圖,等於整張原尺寸上線、縮圖形同虛設(實測踩過)。
+  解不開的檔(HEIC、損毀檔)收進 `failed` 並在訊息裡講出來,不讓整批失敗、也不靜默跳過。
 - `js/`:`app.js`(主流程)、`state.js`、`zip-loader.js`、`remote-image.js`、`gbif-image.js`、`i18n.js`、`theme.js`、`overview.js`、`pca-view.js`、`tree-view.js`、`info-panel.js`、`legend.js`、`groups.js`、`search.js`
 - `data/catalog.json` 案例清單 · `data/*.zip` 各案例資料 · `data/img/**` 鏡像散檔 · `data/foram_obj_images.json` Zenodo offset index
 

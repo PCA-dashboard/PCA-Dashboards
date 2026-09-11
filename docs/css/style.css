@@ -504,6 +504,18 @@ a.lic-badge:hover { border-color: var(--accent); color: var(--ink); }
 .itk-unknown td, .itk-archive td { color: var(--dim); }
 .itk-ignore td { color: var(--dim-2); }
 
+/* 圖片面板（智慧投入內） */
+.img-panel { border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; margin-bottom: 10px;
+             background: var(--sunken); }
+.img-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 6px; font-size: 13px; }
+.img-opts { display: flex; gap: 14px; flex-wrap: wrap; align-items: center; font-size: 12px; color: var(--ink-soft); }
+.img-opt { display: inline-flex; align-items: center; gap: 5px; }
+.img-notes { margin-top: 6px; }
+.img-notes .note { font-size: 12px; padding: 3px 0; color: var(--ink-soft); }
+.img-notes .note.err { color: var(--err); font-weight: 600; }
+.img-notes .note.warn { color: var(--warn); }
+.img-notes .note.dim { color: var(--dim); }
+
 /* 建立精靈：DOI 欄位 + 「帶入」鈕同一列 */
 .fld-row { display: flex; gap: 6px; align-items: stretch; }
 .fld-row input { flex: 1; min-width: 0; }
