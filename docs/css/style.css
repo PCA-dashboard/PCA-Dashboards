@@ -467,6 +467,43 @@ a.lic-badge:hover { border-color: var(--accent); color: var(--ink); }
              max-height: 190px; overflow: auto; white-space: pre-wrap; word-break: break-word; }
 .cite-text.mono { font-family: var(--mono); font-size: 11px; }
 
+/* ---- ⓪ 智慧投入 ---- */
+.intake { border: 1px solid var(--line-strong); border-radius: 14px; padding: 14px 16px;
+          margin: 0 0 18px; background: var(--panel-2); }
+.intake h3 { margin: 0 0 4px; font-size: 15px; }
+.intake > p { margin: 0 0 10px; }
+.drop { border: 2px dashed var(--line-strong); border-radius: 12px; padding: 18px 14px;
+        text-align: center; background: var(--sunken); transition: border-color .12s, background .12s; }
+.drop.over { border-color: var(--accent); background: var(--panel-3); }
+.drop p { margin: 0 0 10px; color: var(--ink-soft); font-size: 13px; }
+.drop-btns { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+.intake-head { display: flex; align-items: center; justify-content: space-between; gap: 10px;
+               flex-wrap: wrap; margin: 12px 0 8px; }
+.intake-acts { display: inline-flex; gap: 6px; }
+.intake-missing { margin-bottom: 10px; }
+.miss-grp { border-left: 3px solid var(--line-strong); padding: 6px 0 6px 10px; margin-bottom: 8px;
+            font-size: 12px; color: var(--ink-soft); }
+.miss-grp.err { border-left-color: var(--err); }
+.miss-grp.ok { border-left-color: var(--ok); }
+.miss-grp.warn { border-left-color: var(--warn); }
+.miss-grp ul { margin: 4px 0 0; padding-left: 18px; }
+.miss-grp li { margin: 2px 0; }
+.intake-table-wrap { max-height: 260px; overflow: auto; border: 1px solid var(--line);
+                     border-radius: 10px; }
+.intake-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.intake-table th, .intake-table td { padding: 5px 8px; text-align: left; border-bottom: 1px solid var(--line);
+                                     vertical-align: top; }
+.intake-table th { position: sticky; top: 0; background: var(--panel-3); color: var(--ink-soft);
+                   font-weight: 700; z-index: 1; }
+.intake-table .itk-name { font-family: var(--mono); overflow-wrap: anywhere; max-width: 230px; }
+.intake-table .itk-why { color: var(--dim); }
+.intake-table select { width: 100%; }
+/* 角色一眼可辨：可用的亮、不能用的暗、原始資料特別點出來 */
+.itk-scores td, .itk-taxa td { color: var(--ink); }
+.itk-raw td { background: color-mix(in srgb, var(--err) 12%, transparent); }
+.itk-unknown td, .itk-archive td { color: var(--dim); }
+.itk-ignore td { color: var(--dim-2); }
+
 /* 建立精靈：DOI 欄位 + 「帶入」鈕同一列 */
 .fld-row { display: flex; gap: 6px; align-items: stretch; }
 .fld-row input { flex: 1; min-width: 0; }

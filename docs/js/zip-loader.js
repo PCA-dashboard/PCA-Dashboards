@@ -42,7 +42,8 @@
 
   function err(msg) { var e = new Error(msg); e.userFacing = true; return e; }
 
-  function buildModel(zip) {
+  function buildModel(zip, opts) {
+    opts = opts || {};
     function readText(path) {
       var f = zip.file(path);
       if (!f) throw err("Zip 內缺少檔案：" + path);
@@ -68,7 +69,12 @@
       model.idCol = taxaMeta.id_column || "species_id";
       model.displayLabelCol = taxaMeta.display_label_column || "display_label";
       model.imageCol = taxaMeta.image_column || "image";
-      model.imageBaseUrl = taxaMeta.image_base_url || null;    // 設定時：照片為站上散檔，按需載入＋瀏覽器原生快取
+      // 站台可覆寫 image_base_url（catalog.json 的同名欄位）。
+      // 理由：統一 Zip 是可攜的契約，不該知道自己被部署在哪裡——建立精靈產出的資料包
+      // 永遠寫相對的 "img/"，搬進 gallery 時由站台說「其實在 data/img/<id>/」。
+      // 一律用相對路徑：多數人是 https://user.github.io/<repo>/ 這種 project page，
+      // 絕對路徑（/img/…）會全部破圖。
+      model.imageBaseUrl = opts.imageBaseUrl || taxaMeta.image_base_url || null;
       model.outlineCol = taxaMeta.outline_column || null;      // 形態輪廓（可選，與照片並存）
       model.imageCaptionCol = taxaMeta.image_caption_column || null;  // 照片標註/來源授權
       model.infoFields = taxaMeta.info_fields || [];
@@ -218,18 +224,20 @@
       throw err("join key 不一致（" + problems.length + " 處），例：\n  " + problems.slice(0, 5).join("\n  "));
   }
 
+  // opts.imageBaseUrl：由站台（catalog.json）覆寫 manifest 裡的圖片路徑
   var Loader = {
-    fromBlob: function (blob) {
-      return JSZip.loadAsync(blob).then(buildModel);
+    fromBlob: function (blob, opts) {
+      return JSZip.loadAsync(blob).then(function (z) { return buildModel(z, opts); });
     },
-    fromArrayBuffer: function (buf) {
-      return JSZip.loadAsync(buf).then(buildModel);
+    fromArrayBuffer: function (buf, opts) {
+      return JSZip.loadAsync(buf).then(function (z) { return buildModel(z, opts); });
     },
-    fromUrl: function (url) {
+    fromUrl: function (url, opts) {
       return fetch(url).then(function (r) {
         if (!r.ok) throw err("無法取得 " + url + "（HTTP " + r.status + "）");
         return r.arrayBuffer();
-      }).then(function (b) { return JSZip.loadAsync(b); }).then(buildModel);
+      }).then(function (b) { return JSZip.loadAsync(b); })
+        .then(function (z) { return buildModel(z, opts); });
     }
   };
 

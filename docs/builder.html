@@ -11,7 +11,7 @@
       d=p==='auto'?(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'):p;
       r.setAttribute('data-theme',d);r.setAttribute('data-accent',a);}catch(e){}})();
   </script>
-  <link rel="stylesheet" href="css/style.css?v=23" />
+  <link rel="stylesheet" href="css/style.css?v=24" />
   <script src="vendor/jszip/jszip-3.10.1.min.js"></script>
   <script src="vendor/plotly/plotly-2.35.2.min.js"></script>
   <script src="vendor/phylocanvas/phylocanvas.gl-1.64.0.bundle.js"></script>
@@ -68,6 +68,33 @@
   <div class="builder">
     <!-- 左：表單 -->
     <aside class="builder-form">
+      <!-- ⓪ 智慧投入：整包丟進來，判讀後自動填好下面的步驟。判讀核心在 js/intake.js。 -->
+      <section class="intake" id="intake">
+        <h3 data-i18n="itk.title">⓪ 投入資料（可選）</h3>
+        <p class="dim small" data-i18n="itk.lead">把整個資料夾丟進來，我判讀哪些能用、缺什麼，再自動填好下面的步驟。檔案不會上傳到任何伺服器，全部在你的瀏覽器裡處理。</p>
+        <div class="drop" id="intake-drop">
+          <p data-i18n="itk.drop">把資料夾或檔案拖到這裡</p>
+          <div class="drop-btns">
+            <button type="button" class="btn small" id="intake-pick-dir" data-i18n="itk.pickDir">選擇資料夾</button>
+            <button type="button" class="btn small" id="intake-pick-files" data-i18n="itk.pickFiles">選擇檔案</button>
+          </div>
+          <input type="file" id="intake-dir" webkitdirectory directory multiple hidden />
+          <input type="file" id="intake-files" multiple hidden />
+        </div>
+        <p id="intake-msg" class="dim small" hidden></p>
+        <div id="intake-result" hidden>
+          <div class="intake-head">
+            <span id="intake-count" class="dim small"></span>
+            <span class="intake-acts">
+              <button type="button" class="btn small primary" id="intake-apply" data-i18n="itk.accept">全部接受 → 填入下面</button>
+              <button type="button" class="btn small" id="intake-reset" data-i18n="itk.reset">重來</button>
+            </span>
+          </div>
+          <div id="intake-missing" class="intake-missing" hidden></div>
+          <div class="intake-table-wrap"><table class="intake-table" id="intake-table"></table></div>
+        </div>
+      </section>
+
       <ol class="steps">
         <li>
           <h3 data-i18n="bld.s1">① 資料集資訊</h3>
@@ -239,18 +266,19 @@ Genus_A_sp2,2.017,-0.884,0.341</code>
     </div>
   </div>
 
-  <script src="js/state.js?v=23"></script>
-  <script src="js/i18n.js?v=23"></script>
-  <script src="js/zip-loader.js?v=23"></script>
-  <script src="js/doi.js?v=23"></script>
-  <script src="js/unified-build.js?v=23"></script>
-  <script src="js/groups.js?v=23"></script>
-  <script src="js/legend.js?v=23"></script>
-  <script src="js/pca-view.js?v=23"></script>
-  <script src="js/tree-view.js?v=23"></script>
-  <script src="js/info-panel.js?v=23"></script>
-  <script src="js/search.js?v=23"></script>
-  <script src="js/theme.js?v=23"></script>
-  <script src="js/builder.js?v=23"></script>
+  <script src="js/state.js?v=24"></script>
+  <script src="js/i18n.js?v=24"></script>
+  <script src="js/zip-loader.js?v=24"></script>
+  <script src="js/doi.js?v=24"></script>
+  <script src="js/intake.js?v=24"></script>
+  <script src="js/unified-build.js?v=24"></script>
+  <script src="js/groups.js?v=24"></script>
+  <script src="js/legend.js?v=24"></script>
+  <script src="js/pca-view.js?v=24"></script>
+  <script src="js/tree-view.js?v=24"></script>
+  <script src="js/info-panel.js?v=24"></script>
+  <script src="js/search.js?v=24"></script>
+  <script src="js/theme.js?v=24"></script>
+  <script src="js/builder.js?v=24"></script>
 </body>
 </html>

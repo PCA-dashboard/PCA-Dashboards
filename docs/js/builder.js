@@ -219,8 +219,247 @@
     });
   }
 
+  var taxaReady = null;                 // 最近一次 onTaxaFile 的 promise，套用計畫時要等它
+
+  /* ---- ⓪ 智慧投入 ----
+     判讀核心在 intake.js（純函式、不碰 DOM，用 Node 語料庫測試）。這裡只負責
+     讀檔頭、畫表、把計畫填回步驟 ①～④。
+
+     填回去的方式是用 DataTransfer 把 File 塞進原本的 <input type="file"> 再觸發 change，
+     所以既有的整條處理管線（syncFilePick / onTaxaFile / collectInputs）原封不動重用，
+     不會出現「投入路徑」與「手動路徑」兩套行為不一致的問題。 */
+  var HEAD_BYTES = 64 * 1024;
+  var intakeFiles = [];        // File 物件，key 為相對路徑
+  var intakeResult = null;
+
+  function readHead(file) {
+    return file.slice(0, HEAD_BYTES).text
+      ? file.slice(0, HEAD_BYTES).text()
+      : new Promise(function (res) {
+          var r = new FileReader();
+          r.onload = function () { res(r.result); };
+          r.onerror = function () { res(""); };
+          r.readAsText(file.slice(0, HEAD_BYTES));
+        });
+  }
+
+  function relPath(f) { return f.webkitRelativePath || f.name; }
+
+  /** 拖進來的可能是資料夾：用 webkitGetAsEntry 遞迴展開。 */
+  function filesFromDataTransfer(dt) {
+    var items = dt.items;
+    if (!items || !items.length || !items[0].webkitGetAsEntry) {
+      return Promise.resolve(Array.prototype.slice.call(dt.files));
+    }
+    var roots = [];
+    for (var i = 0; i < items.length; i++) {
+      var e = items[i].webkitGetAsEntry && items[i].webkitGetAsEntry();
+      if (e) roots.push(e);
+    }
+    var out = [];
+    function walk(entry, prefix) {
+      if (entry.isFile) {
+        return new Promise(function (res) {
+          entry.file(function (f) {
+            try { f.__rel = prefix + entry.name; } catch (e) {}
+            out.push(f); res();
+          }, res);
+        });
+      }
+      var reader = entry.createReader(), all = [];
+      function batch() {
+        return new Promise(function (res) {
+          reader.readEntries(function (ents) {
+            if (!ents.length) return res();
+            all = all.concat(ents);
+            batch().then(res);
+          }, res);
+        });
+      }
+      return batch().then(function () {
+        return Promise.all(all.map(function (c) { return walk(c, prefix + entry.name + "/"); }));
+      });
+    }
+    return Promise.all(roots.map(function (r) { return walk(r, ""); })).then(function () { return out; });
+  }
+
+  function intakeMsg(text, kind) {
+    var m = el("intake-msg");
+    if (!m) return;
+    m.className = "dim small" + (kind ? " " + kind : "");
+    m.innerHTML = text || "";
+    m.hidden = !text;
+  }
+
+  function runIntake(files) {
+    if (!files.length) return;
+    intakeMsg(esc(T("itk.reading", { n: files.length })));
+    intakeFiles = files;
+    Promise.all(files.map(function (f) {
+      return readHead(f).then(function (head) {
+        return { name: f.__rel || relPath(f), size: f.size, head: head };
+      }).catch(function () { return { name: f.__rel || relPath(f), size: f.size, head: "" }; });
+    })).then(function (descs) {
+      descs.forEach(function (d, i) { files[i].__rel = d.name; });
+      intakeResult = FD.Intake.classify(descs);
+      renderIntake();
+      intakeMsg("");
+    }).catch(function (e) {
+      console.error(e);
+      intakeMsg('<span class="err">' + esc(T("itk.failed", { msg: e.message || e })) + "</span>");
+    });
+  }
+
+  var ROLE_ORDER = ["scores", "variance", "taxa", "tree", "crosswalk", "raw", "image", "xlsx", "archive", "unknown", "ignore"];
+  function roleLabel(r) { return T("itk.role." + r); }
+
+  function renderIntake() {
+    var res = intakeResult, box = el("intake-result"), tbl = el("intake-table");
+    if (!res || !box || !tbl) return;
+    box.hidden = false;
+
+    var usable = res.files.filter(function (f) { return ROLE_ORDER.indexOf(f.role) < 5; }).length;
+    var imgs = res.files.filter(function (f) { return f.role === "image"; }).length;
+    el("intake-count").textContent = T("itk.count", { total: res.files.length, usable: usable, images: imgs });
+
+    // 缺什麼：必要在前、可選在後，每項都附「怎麼補」
+    var mbox = el("intake-missing");
+    var req = res.missing.filter(function (m) { return m.level === "required"; });
+    var opt = res.missing.filter(function (m) { return m.level === "optional"; });
+    var mh = "";
+    if (req.length) {
+      mh += '<div class="miss-grp err"><b>' + esc(T("itk.missRequired")) + "</b><ul>" +
+        req.map(function (m) { return "<li>" + esc(m.how) + "</li>"; }).join("") + "</ul></div>";
+    } else {
+      mh += '<div class="miss-grp ok"><b>' + esc(T("itk.ready")) + "</b></div>";
+    }
+    if (opt.length) {
+      mh += '<div class="miss-grp"><b>' + esc(T("itk.missOptional")) + "</b><ul>" +
+        opt.map(function (m) { return "<li>" + esc(m.how) + "</li>"; }).join("") + "</ul></div>";
+    }
+    if (res.plan.multipleDatasets.length) {
+      mh = '<div class="miss-grp warn"><b>' +
+        esc(T("itk.multi", { n: res.plan.multipleDatasets.length })) + "</b><ul>" +
+        res.plan.multipleDatasets.map(function (n) { return "<li>" + esc(n) + "</li>"; }).join("") +
+        "</ul></div>" + mh;
+    }
+    mbox.innerHTML = mh;
+    mbox.hidden = false;
+    el("intake-apply").disabled = req.length > 0;
+
+    // 判讀表：一律攤開，但可以「全部接受」一鍵通過（決定 4）
+    var rows = res.files.slice().sort(function (a, b) {
+      return ROLE_ORDER.indexOf(a.role) - ROLE_ORDER.indexOf(b.role) || a.name.localeCompare(b.name);
+    });
+    var shown = rows.filter(function (r) { return r.role !== "ignore"; });
+    var hidden = rows.length - shown.length;
+    tbl.innerHTML =
+      "<thead><tr><th>" + esc(T("itk.thFile")) + "</th><th>" + esc(T("itk.thRole")) +
+      "</th><th>" + esc(T("itk.thWhy")) + "</th></tr></thead><tbody>" +
+      shown.map(function (f, i) {
+        var sel = '<select class="itk-role" data-i="' + res.files.indexOf(f) + '">' +
+          ROLE_ORDER.map(function (r) {
+            return '<option value="' + r + '"' + (r === f.role ? " selected" : "") + ">" + esc(roleLabel(r)) + "</option>";
+          }).join("") + "</select>";
+        return '<tr class="itk-' + f.role + '"><td class="itk-name" title="' + esc(f.name) + '">' +
+          esc(f.name) + "</td><td>" + sel + '</td><td class="itk-why">' +
+          esc(f.reasons.join("；")) + "</td></tr>";
+      }).join("") +
+      (hidden ? '<tr class="itk-ignore"><td colspan="3" class="dim">' +
+        esc(T("itk.hidden", { n: hidden })) + "</td></tr>" : "") +
+      "</tbody>";
+  }
+
+  /** 使用者改判某個檔的角色 → 重跑跨檔比對（涵蓋率、計畫、缺什麼都會跟著變）。
+      C／D 層只吃角色與已算好的 detail，不必重讀檔案，所以很快。 */
+  function overrideRole(idx, role) {
+    if (!intakeResult) return;
+    var f = intakeResult.files[idx];
+    if (!f || f.role === role) return;
+    f.role = role;
+    f.confidence = 1;
+    f.baseReasons = [T("itk.manual")];     // crossLink 會由此還原，不能只改 reasons
+    intakeResult = FD.Intake.reclassify(intakeResult);
+    renderIntake();
+  }
+
+  /** 把 File 塞進既有的 <input type="file"> 並觸發 change，重用整條既有管線。 */
+  function assign(input, file) {
+    if (!input) return false;
+    try {
+      var dt = new DataTransfer();
+      if (file) dt.items.add(file);
+      input.files = dt.files;
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+      return true;
+    } catch (e) { console.error("assign", e); return false; }
+  }
+  function fileByName(name) {
+    for (var i = 0; i < intakeFiles.length; i++) if (intakeFiles[i].__rel === name) return intakeFiles[i];
+    return null;
+  }
+
+  function applyPlan() {
+    var p = intakeResult && intakeResult.plan;
+    if (!p) return;
+    // 視圖列全部重建，數量對齊計畫
+    el("views-list").innerHTML = "";
+    p.views.forEach(function (v) { addViewRow(v.label); });
+    var rows = Array.prototype.slice.call(document.querySelectorAll("#views-list .view-row"));
+    p.views.forEach(function (v, i) {
+      if (!rows[i]) return;
+      assign(rows[i].querySelector(".v-scores"), fileByName(v.scoresFile));
+      if (v.varianceFile) assign(rows[i].querySelector(".v-var"), fileByName(v.varianceFile));
+    });
+    if (p.treeFile) assign(el("f-tree"), fileByName(p.treeFile));
+
+    if (!p.taxaFile) { msg('<span class="ok">' + esc(T("itk.applied")) + "</span>"); return; }
+    assign(el("f-taxa"), fileByName(p.taxaFile));
+    // onTaxaFile 是非同步的：要等下拉填好，選欄位才有效
+    (taxaReady || Promise.resolve()).then(function () {
+      function pick(id, val) {
+        var sel = el(id);
+        if (sel && val != null && Array.prototype.some.call(sel.options, function (o) { return o.value === val; })) sel.value = val;
+      }
+      pick("m-group", p.groupColumn);
+      pick("m-image", p.imageColumn);
+      msg('<span class="ok">' + esc(T("itk.applied")) + "</span>");
+    }).catch(function () {});
+  }
+
+  function initIntake() {
+    var drop = el("intake-drop");
+    if (!drop || !FD.Intake) return;
+    el("intake-pick-dir").addEventListener("click", function () { el("intake-dir").click(); });
+    el("intake-pick-files").addEventListener("click", function () { el("intake-files").click(); });
+    ["intake-dir", "intake-files"].forEach(function (id) {
+      el(id).addEventListener("change", function (e) {
+        runIntake(Array.prototype.slice.call(e.target.files));
+      });
+    });
+    ["dragenter", "dragover"].forEach(function (ev) {
+      drop.addEventListener(ev, function (e) { e.preventDefault(); drop.classList.add("over"); });
+    });
+    ["dragleave", "drop"].forEach(function (ev) {
+      drop.addEventListener(ev, function (e) { e.preventDefault(); drop.classList.remove("over"); });
+    });
+    drop.addEventListener("drop", function (e) {
+      e.preventDefault();
+      filesFromDataTransfer(e.dataTransfer).then(runIntake);
+    });
+    el("intake-apply").addEventListener("click", applyPlan);
+    el("intake-reset").addEventListener("click", function () {
+      intakeFiles = []; intakeResult = null;
+      el("intake-result").hidden = true; intakeMsg("");
+    });
+    el("intake-table").addEventListener("change", function (e) {
+      var sel = e.target.closest(".itk-role");
+      if (sel) overrideRole(+sel.dataset.i, sel.value);
+    });
+  }
+
   function onTaxaFile(file) {
-    readFileText(file).then(function (text) {
+    taxaReady = readFileText(file).then(function (text) {
       taxaText = text;
       var rows = FD.parseCSV(text);
       taxaHeader = (rows[0] || []).map(function (h) { return h == null ? "" : h; });
@@ -240,6 +479,7 @@
       console.error(e);
       msg('<span class="err">' + esc(T("bld.errTaxa", { msg: e.message || e })) + "</span>");
     });
+    return taxaReady;
   }
 
   // ---- 收集輸入 ----
@@ -411,6 +651,7 @@
     });
     el("f-taxa").addEventListener("change", function (e) { if (e.target.files[0]) onTaxaFile(e.target.files[0]); });
     initDoiFetch();
+    initIntake();
     el("btn-preview").addEventListener("click", preview);
     el("btn-zip").addEventListener("click", downloadZip);
     el("btn-package").addEventListener("click", packageSite);

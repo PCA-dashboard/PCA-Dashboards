@@ -104,7 +104,8 @@
     if (updateHash) location.hash = "dataset=" + ds.id;
     var gbifField = ds.gbif_fallback === true ? "display_label" : (ds.gbif_fallback && ds.gbif_fallback.name_field) || null;
     currentSource = { url: ds.zip, name: ds.id + ".zip", ds: ds };
-    loadVia(FD.Loader.fromUrl(ds.zip), "載入 " + (ds.short || ds.title), ds.remote_images, gbifField);
+    loadVia(FD.Loader.fromUrl(ds.zip, { imageBaseUrl: ds.image_base_url || null }),
+            "載入 " + (ds.short || ds.title), ds.remote_images, gbifField);
   }
   function initGallery() {
     return fetch("data/catalog.json").then(function (r) { return r.ok ? r.json() : null; })
