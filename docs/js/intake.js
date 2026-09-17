@@ -160,6 +160,18 @@
     var name = baseName(f.name), head = f.head || "";
     var out = { name: f.name, size: f.size || 0, role: "unknown", confidence: 0, reasons: [], detail: {} };
 
+    // 編碼：非 UTF-8 一定要講出來。用錯編碼不會報錯，只會安靜地變亂碼，
+    // 使用者只看到「看不出是表格資料」，完全猜不到真正的原因是編碼。
+    if (f.encoding && f.encoding !== "utf-8") {
+      out.detail.encoding = f.encoding;
+      out.reasons.push("編碼判為 " + f.encoding + (f.encForced ? "（你指定的）" : ""));
+      if (f.encAmbiguous) out.reasons.push("編碼不確定，請看下面的欄名是不是亂碼");
+    }
+    if (f.replacements) {
+      out.detail.replacements = f.replacements;
+      out.reasons.push(f.replacements + " 個字元解不開，編碼可能不對");
+    }
+
     if (JUNK_RE.test(f.name)) { out.role = "ignore"; out.confidence = 1; out.reasons.push("系統產生的檔案"); return out; }
     if (IMAGE_EXT_RE.test(name)) {
       out.role = "image"; out.confidence = 1;
@@ -208,6 +220,11 @@
     out.detail.delimiter = sniff.delim;
     out.detail.header = header;
     out.detail.rowsSeen = body.length;
+    // 把解出來的欄名直接秀出來。這是使用者判斷「編碼對不對」的唯一依據——
+    // 機器分不出 Big5 與 GBK，但人看一眼欄名就知道是不是亂碼。
+    out.detail.preview = header.slice(0, 6).map(function (h, i) {
+      return h === "" ? "(第 " + (i + 1) + " 欄無標題)" : h;
+    }).join("、") + (header.length > 6 ? "…" : "");
 
     var pcCols = header.filter(function (h) { return PC_RE.test(h); });
     var varCols = header.filter(function (h) { return VAR_RE.test(h); });
@@ -225,6 +242,7 @@
     if (varCols.length) {
       out.role = "variance"; out.confidence = 0.95;
       out.reasons.push("有 " + varCols.join("／") + " 欄");
+      out.reasons.push("欄位：" + out.detail.preview);
       out.detail.nPC = body.length;
       return out;
     }
@@ -234,6 +252,7 @@
         header.some(function (h) { return /^species[_ ]?id$/i.test(h); })) {
       out.role = "crosswalk"; out.confidence = 0.95;
       out.reasons.push("有 tip_label 與 species_id 兩欄");
+      out.reasons.push("欄位：" + out.detail.preview);
       return out;
     }
     // scores：≥2 個 PC 樣式欄
@@ -242,6 +261,7 @@
       out.detail.pcs = pcCols;
       out.reasons.push(pcCols.length + " 個 PC 欄（" + pcCols.slice(0, 3).join("、") + (pcCols.length > 3 ? "…" : "") + "）");
       if (idCol) out.reasons.push("ID 欄推測為「" + (idCol.name || "第 1 欄（無表頭）") + "」");
+      out.reasons.push("欄位：" + out.detail.preview);
       return out;
     }
 
@@ -271,6 +291,7 @@
       if (taxonish.length) out.reasons.push("有分類欄位（" + taxonish.slice(0, 3).join("、") + "）");
       out.reasons.push("ID 欄推測為「" + (idCol.name || "第 1 欄（無表頭）") + "」，" +
                        catCols.length + " 個欄位可當分組");
+      out.reasons.push("欄位：" + out.detail.preview);
       return out;
     }
 

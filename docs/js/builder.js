@@ -74,13 +74,29 @@
   var lastZipBlob = null;
   var taxaText = null, taxaHeader = [];
 
-  function readFileText(file) {
+  /** 讀整個檔的文字。**不能直接用 readAsText**——它一律當 UTF-8，
+      Big5／Shift_JIS 的資料會安靜地變成亂碼（不報錯，只是欄名認不出來）。
+      file.__enc 是投入階段決定的編碼；手動選檔則現場偵測。 */
+  function readBytes(blob) {
+    if (blob.arrayBuffer) return blob.arrayBuffer();
     return new Promise(function (res, rej) {
       var r = new FileReader();
       r.onload = function () { res(r.result); };
       r.onerror = function () { rej(r.error); };
-      r.readAsText(file);
+      r.readAsArrayBuffer(blob);
     });
+  }
+  function readFileText(file) {
+    return readBytes(file).then(function (buf) {
+      if (!FD.Encoding) return new TextDecoder().decode(new Uint8Array(buf));
+      var r = FD.Encoding.best(new Uint8Array(buf), file.__enc || encPref());
+      file.__encUsed = r.detected;
+      return r.text;
+    });
+  }
+  function encPref() {
+    var sel = el("intake-enc");
+    return (sel && sel.value) || "auto";
   }
   function el(id) { return document.getElementById(id); }
 
@@ -232,15 +248,13 @@
   var intakeFiles = [];        // File 物件，key 為相對路徑
   var intakeResult = null;
 
+  /** 讀前 64KB 並偵測編碼。回傳 { text, detected, replacements, ambiguous }。 */
   function readHead(file) {
-    return file.slice(0, HEAD_BYTES).text
-      ? file.slice(0, HEAD_BYTES).text()
-      : new Promise(function (res) {
-          var r = new FileReader();
-          r.onload = function () { res(r.result); };
-          r.onerror = function () { res(""); };
-          r.readAsText(file.slice(0, HEAD_BYTES));
-        });
+    return readBytes(file.slice(0, HEAD_BYTES)).then(function (buf) {
+      var b = new Uint8Array(buf);
+      if (!FD.Encoding) return { text: new TextDecoder().decode(b), detected: "utf-8", replacements: 0 };
+      return FD.Encoding.best(b, encPref());
+    }).catch(function () { return { text: "", detected: "utf-8", replacements: 0 }; });
   }
 
   function relPath(f) { return f.webkitRelativePath || f.name; }
@@ -296,8 +310,13 @@
     intakeMsg(esc(T("itk.reading", { n: files.length })));
     intakeFiles = files;
     Promise.all(files.map(function (f) {
-      return readHead(f).then(function (head) {
-        return { name: f.__rel || relPath(f), size: f.size, head: head };
+      return readHead(f).then(function (r) {
+        f.__enc = r.detected;                 // 之後讀整個檔要用同一個編碼
+        return {
+          name: f.__rel || relPath(f), size: f.size, head: r.text,
+          encoding: r.detected, replacements: r.replacements,
+          encAmbiguous: !!r.ambiguous, encForced: !!r.forced
+        };
       }).catch(function () { return { name: f.__rel || relPath(f), size: f.size, head: "" }; });
     })).then(function (descs) {
       descs.forEach(function (d, i) { files[i].__rel = d.name; });
@@ -449,6 +468,9 @@
       filesFromDataTransfer(e.dataTransfer).then(runIntake);
     });
     el("intake-apply").addEventListener("click", applyPlan);
+    el("intake-enc").addEventListener("change", function () {
+      if (intakeFiles.length) runIntake(intakeFiles);     // 換編碼要重讀檔頭重判
+    });
     el("img-resize").addEventListener("change", renderImages);
     el("img-mode").addEventListener("change", function () { imgDone = null; });
     el("intake-reset").addEventListener("click", function () {

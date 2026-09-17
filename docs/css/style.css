@@ -504,6 +504,9 @@ a.lic-badge:hover { border-color: var(--accent); color: var(--ink); }
 .itk-unknown td, .itk-archive td { color: var(--dim); }
 .itk-ignore td { color: var(--dim-2); }
 
+.itk-enc { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: var(--dim); }
+.itk-enc select { font-size: 12px; }
+
 /* 圖片面板（智慧投入內） */
 .img-panel { border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; margin-bottom: 10px;
              background: var(--sunken); }
